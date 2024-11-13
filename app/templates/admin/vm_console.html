@@ -296,7 +296,8 @@ function connectToVM() {
         initTerminal();
     }
 
-    socket = new WebSocket(`ws://${window.location.host}/ws/vm/{{ vm.id }}`);
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    socket = new WebSocket(`${protocol}//${window.location.host}/ws/vm/{{ vm.id }}`);
     
     socket.onopen = () => {
         updateConnectionStatus(true);
