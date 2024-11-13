@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="console-container">
+    <div class="container py-4">
+        <!-- Header Section -->
+        <div class="console-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="console-title">VM Console - {{ vm.name }}</h1>
+                    <p class="text-muted mb-0">SSH Connection to {{ vm.ip_address }}</p>
+                </div>
+                <div class="connection-status">
+                    <span id="connection-status" class="status-badge">Disconnected</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Info Card -->
+        <div class="info-card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <i class="bi bi-hdd-network"></i>
+                            <div>
+                                <label>IP Address</label>
+                                <span>{{ vm.ip_address }}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="bi bi-person"></i>
+                            <div>
+                                <label>Username</label>
+                                <span>{{ vm.username }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="connectToVM()">
+                                <i class="bi bi-terminal"></i> Connect
+                            </button>
+                            <button class="btn btn-danger" onclick="disconnectVM()" disabled>
+                                <i class="bi bi-x-circle"></i> Disconnect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Card -->
+        <div class="terminal-card">
+            <div class="terminal-header">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-terminal-fill me-2"></i>
+                    <h5 class="mb-0">Terminal</h5>
+                </div>
+                <div class="terminal-controls">
+                    <button class="btn btn-control" onclick="term.clear()">
+                        <i class="bi bi-eraser"></i>
+                    </button>
+                    <div class="btn-group">
+                        <button class="btn btn-control" onclick="decreaseFontSize()">
+                            <i class="bi bi-dash"></i>
+                        </button>
+                        <button class="btn btn-control" onclick="increaseFontSize()">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="terminal-body">
+                <div id="terminal"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.console-container {
+    background: #f8f9fa;
+    min-height: calc(100vh - 56px);
+    margin: 0;
+    padding: 0;
+}
+
+.console-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    background: #6c757d;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-badge.connected {
+    background: linear-gradient(45deg, #2ecc71, #27ae60);
+}
+
+/* Info Card Styles */
+.info-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: none;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.info-item i {
+    font-size: 1.5rem;
+    color: #0d6efd;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 110, 253, 0.1);
+    border-radius: 0.75rem;
+}
+
+.info-item div {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.info-item span {
+    font-size: 1rem;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+/* Terminal Card Styles */
+.terminal-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.terminal-header {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.terminal-body {
+    background: #1e1e1e;
+    padding: 1rem;
+    border-radius: 0 0 1rem 1rem;
+}
+
+#terminal {
+    height: 500px;
+    border-radius: 0.5rem;
+}
+
+/* Button Styles */
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #0d6efd, #0099ff);
+    border: none;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+
+.btn-danger {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+    border: none;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-control {
+    padding: 0.375rem 0.75rem;
+    color: #6c757d;
+    background: transparent;
+    border: 1px solid #dee2e6;
+}
+
+.btn-control:hover {
+    background: #f8f9fa;
+    color: #2c3e50;
+}
+
+/* Terminal customization */
+.xterm-viewport {
+    border-radius: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .action-buttons {
+        margin-top: 1rem;
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.1.0/css/xterm.css">
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.1.0/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.7.0/lib/xterm-addon-fit.js"></script>
+<script>
+let socket = null;
+let term = null;
+let fontSize = 14;
+
+function initTerminal() {
+    term = new Terminal({
+        cursorBlink: true,
+        fontSize: fontSize,
+        fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+        theme: {
+            background: '#1e1e1e',
+            foreground: '#ffffff',
+            cursor: '#ffffff',
+            selection: 'rgba(255, 255, 255, 0.3)',
+            black: '#000000',
+            brightBlack: '#666666',
+            red: '#e06c75',
+            brightRed: '#be5046',
+            green: '#98c379',
+            brightGreen: '#98c379',
+            yellow: '#e5c07b',
+            brightYellow: '#d19a66',
+            blue: '#61afef',
+            brightBlue: '#61afef',
+            magenta: '#c678dd',
+            brightMagenta: '#c678dd',
+            cyan: '#56b6c2',
+            brightCyan: '#56b6c2',
+            white: '#d0d0d0',
+            brightWhite: '#ffffff'
+        }
+    });
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal'));
+    fitAddon.fit();
+
+    term.onData(data => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(data);
+        }
+    });
+}
+
+function connectToVM() {
+    if (!term) {
+        initTerminal();
+    }
+
+    socket = new WebSocket(`ws://${window.location.host}/ws/vm/{{ vm.id }}`);
+    
+    socket.onopen = () => {
+        updateConnectionStatus(true);
+        term.clear();
+        term.write('Connected to VM...\r\n');
+    };
+    
+    socket.onmessage = (event) => {
+        term.write(event.data);
+    };
+    
+    socket.onclose = () => {
+        updateConnectionStatus(false);
+        term.write('\r\nConnection closed\r\n');
+    };
+}
+
+function disconnectVM() {
+    if (socket) {
+        socket.close();
+    }
+}
+
+function updateConnectionStatus(connected) {
+    const status = document.getElementById('connection-status');
+    const connectBtn = document.querySelector('.btn-primary');
+    const disconnectBtn = document.querySelector('.btn-danger');
+    
+    if (connected) {
+        status.textContent = 'Connected';
+        status.classList.remove('bg-secondary');
+        status.classList.add('bg-success');
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+    } else {
+        status.textContent = 'Disconnected';
+        status.classList.remove('bg-success');
+        status.classList.add('bg-secondary');
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+    }
+}
+
+function increaseFontSize() {
+    fontSize = Math.min(fontSize + 2, 24);
+    updateTerminalFontSize();
+}
+
+function decreaseFontSize() {
+    fontSize = Math.max(fontSize - 2, 10);
+    updateTerminalFontSize();
+}
+
+function updateTerminalFontSize() {
+    if (term) {
+        term.setOption('fontSize', fontSize);
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+        fitAddon.fit();
+    }
+}
+
+async function checkKubectl() {
+    try {
+        const response = await fetch(`/api/vm/${vmId}/check-kubectl`);
+        const data = await response.json();
+        
+        if (data.success) {
+            connectToVM();
+        } else {
+            flash('Kubectl not available on this VM', 'error');
+        }
+    } catch (error) {
+        flash('Failed to check kubectl availability', 'error');
+    }
+}
+
+// Check for kubectl parameter in URL
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('check_kubectl') === 'true') {
+    checkKubectl();
+}
+</script>
+{% endblock %} 

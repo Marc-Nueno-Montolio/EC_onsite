@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        
+        <div class="btn-group view-toggle">
+            <button class="btn btn-light active" id="list-view">
+                <i class="bi bi-list"></i>
+            </button>
+            <button class="btn btn-light" id="grid-view">
+                <i class="bi bi-grid"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="courses-container" class="list-view">
+        {% for course in courses %}
+        <div class="course-item mb-4">
+            <!-- List View -->
+            <div class="card list-card">
+                <div class="row g-0">
+                    <div class="col-md-3">
+                        <div class="course-image-wrapper">
+                            <img src="{{ course.image }}" class="course-image" alt="{{ course.title }}">
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold mb-3">{{ course.title }}</h5>
+                            <p class="card-text text-muted mb-4">{{ course.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="progress-wrapper">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" 
+                                             role="progressbar" 
+                                             style="width: {{ course.completion }}%"
+                                             aria-valuenow="{{ course.completion }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">{{ course.completion }}% Complete</small>
+                                </div>
+                                <a href="{{ url_for('courses.launch_course', course_id=course.id) }}" 
+                                   class="btn btn-primary">
+                                    Continue <i class="bi bi-arrow-right ms-2"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Grid View -->
+            <div class="card grid-card">
+                <div class="course-image-wrapper">
+                    <img src="{{ course.image }}" class="card-img-top" alt="{{ course.title }}">
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-3">{{ course.title }}</h5>
+                    <p class="card-text text-muted">{{ course.description }}</p>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" 
+                             role="progressbar" 
+                             style="width: {{ course.completion }}%"
+                             aria-valuenow="{{ course.completion }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">{{ course.completion }}% Complete</small>
+                        <a href="{{ url_for('courses.launch_course', course_id=course.id) }}" 
+                           class="btn btn-primary">
+                            Start <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    /* View toggle buttons */
+    .view-toggle .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .view-toggle .btn.active {
+        background: linear-gradient(45deg, #0d6efd, #0099ff);
+        color: white;
+        border: none;
+        box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+    }
+
+    /* Card styles */
+    .card {
+        border: none;
+        border-radius: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+
+    .course-image-wrapper {
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        min-height: 200px;
+    }
+
+    .course-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .card:hover .course-image {
+        transform: scale(1.05);
+    }
+
+    /* Progress bar */
+    .progress {
+        background-color: #e9ecef;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background: linear-gradient(45deg, #2ecc71, #27ae60);
+        transition: width 0.3s ease;
+    }
+
+    .progress-wrapper {
+        width: 200px;
+    }
+
+    /* Button styles */
+    .btn-primary {
+        background: linear-gradient(45deg, #0d6efd, #0099ff);
+        border: none;
+        font-weight: 500;
+        padding: 0.5rem 1.2rem;
+        border-radius: 1rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(13, 110, 253, 0.15);
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(45deg, #0099ff, #0d6efd);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(13, 110, 253, 0.25);
+    }
+
+    /* Grid view styles */
+    .grid-view {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .list-view .grid-card {
+        display: none;
+    }
+    
+    .grid-view .list-card {
+        display: none;
+    }
+
+    /* List view styles */
+    .list-view .course-item {
+        margin-bottom: 1.5rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .course-image-wrapper {
+            min-height: 150px;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('courses-container');
+    const listBtn = document.getElementById('list-view');
+    const gridBtn = document.getElementById('grid-view');
+    
+    listBtn.addEventListener('click', () => {
+        container.className = 'list-view';
+        listBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+        localStorage.setItem('courseView', 'list');
+    });
+    
+    gridBtn.addEventListener('click', () => {
+        container.className = 'grid-view';
+        gridBtn.classList.add('active');
+        listBtn.classList.remove('active');
+        localStorage.setItem('courseView', 'grid');
+    });
+    
+    // Load saved preference
+    const savedView = localStorage.getItem('courseView') || 'list';
+    if (savedView === 'grid') {
+        gridBtn.click();
+    }
+});
+</script>
+{% endblock %} 

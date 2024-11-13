@@ -1,0 +1,11 @@
+{
+    "title": "Kubernetes Troubleshooting",
+    "description": "Practice using Dynatrace to monitor and troubleshoot your applications",
+    "image": "cover.png",
+    "sections": [
+        "01-introduction",
+        "02-general-troubleshooting",
+        "03-monitoring-issues-troubleshooting",
+        "04-connectivity-troubleshooting"
+    ]
+} 

@@ -1,0 +1,13 @@
+{
+    "title": "Advanced Log Monitoring",
+    "description": "Practice using Dynatrace to monitor and troubleshoot your applications",
+    "image": "cover.jpeg",
+    "sections": [
+        "01-start",
+        "02-analyzing-logs",
+        "03-create-log-metrics",
+        "04-create-custom-attributes",
+        "05-create-log-processing-rules",
+        "06-purepath-trace-context"
+    ]
+} 

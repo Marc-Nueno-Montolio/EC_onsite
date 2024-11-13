@@ -1,0 +1,1 @@
+General troubleshooting steps and guidance for common issues encountered when using Dynatrace with Kubernetes. It covers how to access debug logs, use the troubleshoot subcommand, or generate a support archive.

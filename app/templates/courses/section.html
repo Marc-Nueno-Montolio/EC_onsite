@@ -1,0 +1,868 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Course Header Banner -->
+    <div class="course-banner mb-4">
+        <div class="course-banner-overlay"></div>
+        <div class="course-banner-content">
+            <div class="d-flex flex-column w-100">
+                <div class="d-flex align-items-center gap-4">
+                    <img src="" 
+                         class="course-banner-image" 
+                         alt="{{ course.title }}"
+                         onerror="">
+                    <div>
+                        <h1 class="course-banner-title">{{ course.title }}</h1>
+                        <div class="progress-wrapper">
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar" 
+                                     role="progressbar" 
+                                     style="width: {{ course.completion }}%"
+                                     aria-valuenow="{{ course.completion }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <small class="text-light">Progress: {{ course.completion }}%</small>
+                            </div>
+                        </div>
+                        <nav aria-label="breadcrumb" class="mt-2">
+                            <ol class="breadcrumb breadcrumb-sm mb-0">
+                                <li class="breadcrumb-item"><a href="{{ url_for('courses.list') }}">Workshops</a></li>
+                                <li class="breadcrumb-item"><a href="{{ url_for('courses.launch_course', course_id=course.id) }}">{{ course.title }}</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">{{ section_id|replace('-', ' ')|title }}</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block sidebar">
+            <div class="position-sticky pt-3">
+                <!-- Compact complete button -->
+                <div class="px-2 mb-3">
+                    <button id="completeBtn" 
+                            class="btn btn-complete btn-sm w-100 {% if is_completed %}btn-success{% else %}btn-outline-primary{% endif %}" 
+                            onclick="toggleComplete('{{ course.id }}', '{{ section_id }}')">
+                        <span class="button-content">
+                            <i class="bi {% if is_completed %}bi-check-circle-fill{% else %}bi-check-circle{% endif %} me-1"></i>
+                            <span id="completeBtnText" class="small">
+                                {{ 'Section Completed' if is_completed else 'Mark Section Complete' }}
+                            </span>
+                        </span>
+                        <span class="loading-spinner">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Sections list -->
+                <div class="sections-list">
+                    {% for section in course.sections %}
+                    <a href="{{ url_for('courses.section_details', course_id=course.id, section_id=section) }}"
+                       class="section-link {% if section == section_id %}active{% endif %}">
+                        <div class="section-status-indicator">
+                            {% if section in completed_sections %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            {% elif section == section_id %}
+                                <i class="bi bi-circle-fill text-primary"></i>
+                            {% else %}
+                                <i class="bi bi-circle"></i>
+                            {% endif %}
+                        </div>
+                        <span class="section-title">{{ section|replace('-', ' ')|title }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="content-wrapper">
+                <div class="content">
+                    {{ content|safe }}
+                </div>
+            </div>
+            
+            <!-- Enhanced navigation buttons -->
+            <div class="d-flex justify-content-between mt-4 mb-5">
+                {% if prev_section %}
+                <a href="{{ url_for('courses.section_details', course_id=course.id, section_id=prev_section) }}" 
+                   class="btn btn-nav btn-prev">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Previous Section</span>
+                </a>
+                {% else %}
+                <div></div>
+                {% endif %}
+                
+                {% if next_section %}
+                <a href="{{ url_for('courses.section_details', course_id=course.id, section_id=next_section) }}" 
+                   class="btn btn-nav btn-next">
+                    <span>Next Section</span>
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+:root {
+    --border-radius: 0.5rem;  /* More rounded corners for buttons */
+    --border-radius-lg: 0.5rem;  /* For larger elements */
+    --border-radius-sm: 0.5rem;    /* For smaller elements */
+}
+
+.sidebar {
+    background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+    border-right: 1px solid rgba(0,0,0,0.1);
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    box-shadow: inset -1px 0 0 rgba(0,0,0,.05);
+}
+
+.sections-list {
+    padding: 1rem 0.5rem;
+}
+
+.section-link {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    color: #495057;
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+    background: white;
+    border: 1px solid transparent;
+}
+
+.section-link:hover {
+    background-color: #f8f9fa;
+    color: #0d6efd;
+    border-color: rgba(13, 110, 253, 0.1);
+    transform: translateX(3px);
+}
+
+.section-link.active {
+    background: linear-gradient(45deg, #0d6efd, #0099ff);
+    color: white !important;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(13, 110, 253, 0.2);
+}
+
+.section-link.active .section-title,
+.section-link.active .section-status-indicator i {
+    color: white !important;
+}
+
+.section-status-indicator {
+    display: flex;
+    align-items: center;
+    margin-right: 0.75rem;
+    font-size: 1rem;
+}
+
+.section-title {
+    font-size: 0.95rem;
+    line-height: 1.3;
+}
+
+.content {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.breadcrumb {
+    margin-bottom: 0;
+}
+
+.course-banner {
+    position: relative;
+    background: linear-gradient(45deg, #2c3e50, #3498db);
+    border-radius: var(--border-radius-lg);
+    margin: 0 0 1.5rem 0;
+    height: 180px;
+    overflow: hidden;
+}
+
+.course-banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1;
+}
+
+.course-banner-content {
+    position: relative;
+    z-index: 2;
+    padding: 2rem;
+    color: white;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.course-banner-image {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--border-radius-sm);
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border: 3px solid rgba(255,255,255,0.2);
+}
+
+.course-banner-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.progress-wrapper {
+    width: 300px;
+}
+
+.progress {
+    background-color: rgba(255,255,255,0.2);
+}
+
+.progress-bar {
+    background-color: #2ecc71;
+}
+
+.sidebar-header {
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding-bottom: 0.75rem;
+}
+
+.sidebar-course-image {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.sidebar-course-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sections-list {
+    padding: 0.5rem;
+}
+
+.section-link {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0.75rem;
+    color: #495057;
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    margin-bottom: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.section-link:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    color: #0d6efd;
+}
+
+.section-link.active {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.section-status-indicator {
+    display: flex;
+    align-items: center;
+    margin-right: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.section-title {
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+
+.content-wrapper {
+    background: white;
+    border-radius: var(--border-radius-sm);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.navigation-buttons {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.navigation-buttons .btn {
+    padding: 0.5rem 1.2rem;
+    font-weight: 500;
+}
+
+.editor-container {
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin: 1.5rem 0;
+}
+
+.output-container {
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius-sm);
+    padding: 1.2rem;
+    margin-top: 1rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.test-result {
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.course-banner .breadcrumb {
+    margin: 0;
+    padding: 0;
+}
+
+.course-banner .breadcrumb-item + .breadcrumb-item::before {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.course-banner .breadcrumb-item a {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+}
+
+.course-banner .breadcrumb-item a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.course-banner .breadcrumb-item.active {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Completed section style */
+.section-link .section-status-indicator i.bi-check-circle-fill {
+    color: #2ecc71;
+}
+
+/* Navigation buttons improvements */
+.btn-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    color: #495057;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.btn-nav:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-prev:hover {
+    background: linear-gradient(45deg, #f8f9fa, #ffffff);
+}
+
+.btn-next {
+    background: linear-gradient(45deg, #0d6efd, #0099ff);
+    color: white;
+    border: none;
+}
+
+.btn-next:hover {
+    background: linear-gradient(45deg, #0099ff, #0d6efd);
+    color: white;
+}
+
+/* Ensure breadcrumbs only show in header */
+.content-header .breadcrumb {
+    display: none;
+}
+
+.breadcrumb-sm {
+    font-size: 0.85rem;
+}
+
+.breadcrumb-sm .breadcrumb-item a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+}
+
+.breadcrumb-sm .breadcrumb-item.active {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.breadcrumb-sm .breadcrumb-item + .breadcrumb-item::before {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.editor-container,
+.output-container {
+    border-radius: var(--border-radius-sm);
+}
+
+.test-result {
+    border-radius: var(--border-radius);
+}
+
+/* Code-related colors and styles */
+.editor-container {
+    position: relative;
+    height: 300px;
+    margin: 1.5rem 0;
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    border: 1px solid #2d2d2d;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.output-container {
+    background: #2d2d2d;
+    color: #e9ecef;
+    border-radius: var(--border-radius-sm);
+    padding: 1.2rem;
+    margin-top: 1rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* Run Code button */
+.btn-run-code {
+    background: linear-gradient(45deg, #2ecc71, #27ae60);
+    color: white;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-run-code:hover {
+    background: linear-gradient(45deg, #27ae60, #219a52);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(46, 204, 113, 0.2);
+}
+
+/* Test results styling */
+.test-result {
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin: 0.25rem;
+}
+
+.test-result.bg-success {
+    background: linear-gradient(45deg, #2ecc71, #27ae60) !important;
+    color: white;
+}
+
+.test-result.bg-danger {
+    background: linear-gradient(45deg, #e74c3c, #c0392b) !important;
+    color: white;
+}
+
+/* Code block within content */
+.content pre {
+    background: #2d2d2d;
+    border-radius: var(--border-radius-sm);
+    padding: 1.2rem;
+    margin: 1.2rem 0;
+    overflow-x: auto;
+}
+
+.content pre code {
+    color: #e9ecef;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Ace editor customization */
+#codeEditor {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+    font-size: 14px !important;
+}
+
+/* Optional: Add a subtle toolbar above the editor */
+.editor-toolbar {
+    background: #1e1e1e;
+    padding: 0.5rem;
+    border-bottom: 1px solid #2d2d2d;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.editor-toolbar .btn {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.75rem;
+}
+
+/* Sidebar header and complete button */
+.sidebar-header {
+    padding: 0.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.btn-complete {
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-align: center;
+    line-height: 1.2;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-complete .button-content {
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.btn-complete .loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+}
+
+.btn-complete .loading-spinner i {
+    animation: spin 1s linear infinite;
+}
+
+.btn-complete.loading .button-content {
+    opacity: 0;
+}
+
+.btn-complete.loading .loading-spinner {
+    display: block;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Success state with gradient */
+.btn-complete.btn-success {
+    background: linear-gradient(45deg, #2ecc71, #27ae60);
+    border: none;
+    color: white;
+}
+
+.btn-complete.btn-success:hover {
+    background: linear-gradient(45deg, #27ae60, #219a52);
+}
+
+/* Default state */
+.btn-complete.btn-outline-primary:hover {
+    background: linear-gradient(45deg, #0d6efd, #0099ff);
+    border-color: transparent;
+    color: white;
+}
+
+/* Cool primary button styles */
+.btn-primary {
+    background: linear-gradient(45deg, #0d6efd, #0099ff);
+    border: none;
+    font-weight: 500;
+    padding: 0.5rem 1.2rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.15);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(45deg, #0099ff, #0d6efd);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.25);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.15);
+}
+
+.btn-primary:focus {
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+}
+
+/* For smaller primary buttons */
+.btn-primary.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+}
+
+/* For larger primary buttons */
+.btn-primary.btn-lg {
+    padding: 0.8rem 1.5rem;
+    font-size: 1.1rem;
+}
+</style>
+
+<script>
+async function validateAnswer(validateId, type, buttonAnswer = null) {
+    try {
+        let answer;
+        if (type === 'button') {
+            answer = buttonAnswer;
+        } else if (type === 'action') {
+            answer = null;  // No answer needed for action type
+        } else {
+            const input = document.querySelector(`[data-validate-input="${validateId}"]`);
+            if (!input) throw new Error('Input element not found');
+            answer = input.value;
+        }
+
+        const response = await fetch(`/courses/{{ course.id }}/{{ section_id }}/${validateId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ answer: answer })
+        });
+
+        const result = await response.json();
+        const resultDiv = document.querySelector(`#result-${validateId}`);
+        const actionButton = document.querySelector(`#btn-${validateId}`);
+        
+        if (resultDiv) {
+            resultDiv.textContent = result.message || 'Invalid response';
+            resultDiv.className = `mt-2 ${result.valid ? 'text-success' : 'text-danger'}`;
+        }
+
+        // Handle action button styling
+        if (type === 'action' && actionButton) {
+            actionButton.className = `btn ${result.valid ? 'btn-success' : 'btn-danger'}`;
+            // Reset button style after 2 seconds
+            setTimeout(() => {
+                actionButton.className = 'btn btn-primary';
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('Validation error:', error);
+    }
+}
+</script>
+
+<script>
+function runCode() {
+    const code = document.getElementById('codeEditor').value;
+    fetch('{{ url_for("courses.launch_course", course_id=course.id, section_id=section_id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: code })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('output').textContent = data.output;
+        updateTestResults(data.test_results);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('output').textContent = 'Error running code';
+    });
+}
+
+function updateTestResults(results) {
+    results.forEach(result => {
+        const badge = document.querySelector(`[data-test-id="${result.id}"]`);
+        if (badge) {
+            badge.textContent = result.passed ? 'Passed' : 'Failed';
+            badge.className = `badge ${result.passed ? 'bg-success' : 'bg-danger'} test-result`;
+        }
+    });
+}
+
+function markComplete() {
+    fetch('{{ url_for("courses.mark_complete", course_id=course.id, section_id=section_id) }}', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+</script>
+
+<script>
+function toggleComplete(courseId, sectionId) {
+    const btn = document.getElementById('completeBtn');
+    const btnText = document.getElementById('completeBtnText');
+    const icon = btn.querySelector('.button-content i');
+    
+    // Add loading state
+    btn.classList.add('loading');
+    btn.disabled = true;
+    
+    fetch(`/courses/${courseId}/${sectionId}/mark-complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const isNowCompleted = btnText.textContent.includes('Mark');
+            
+            // Update button appearance
+            btn.classList.toggle('btn-success');
+            btn.classList.toggle('btn-outline-primary');
+            icon.classList.toggle('bi-check-circle-fill');
+            icon.classList.toggle('bi-check-circle');
+            btnText.textContent = isNowCompleted ? 'Section Completed' : 'Mark Complete';
+            
+            // Update sidebar status
+            const currentSectionLink = document.querySelector('.section-link.active .section-status-indicator i');
+            if (currentSectionLink) {
+                currentSectionLink.className = isNowCompleted ? 
+                    'bi bi-check-circle-fill text-success' : 
+                    'bi bi-circle-fill text-primary';
+            }
+            
+            // Update progress bar
+            if (data.completion !== undefined) {
+                const progressBar = document.querySelector('.progress-bar');
+                const progressText = document.querySelector('.progress-wrapper small');
+                if (progressBar && progressText) {
+                    progressBar.style.width = `${data.completion}%`;
+                    progressBar.setAttribute('aria-valuenow', data.completion);
+                    progressText.textContent = `Progress: ${data.completion}%`;
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Optionally show error message to user
+    })
+    .finally(() => {
+        // Remove loading state
+        btn.classList.remove('loading');
+        btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.min.css" rel="stylesheet">
+<style>
+.code-editor {
+    position: relative;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.code-editor-header {
+    background: #1e1e1e;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #343a40;
+}
+
+.code-content {
+    position: relative;
+    height: 200px;
+    width: 100%;
+}
+
+.copy-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.language-label {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.code-content').forEach(element => {
+        const editor = ace.edit(element);
+        const language = element.closest('.code-editor').dataset.language;
+        
+        editor.setTheme("ace/theme/monokai");
+        editor.session.setMode(`ace/mode/${language}`);
+        editor.setReadOnly(true);
+        editor.setOptions({
+            fontSize: "14px",
+            showPrintMargin: false,
+            showGutter: true,
+            highlightActiveLine: false,
+            wrap: true
+        });
+        
+        // Copy button functionality
+        const copyBtn = element.closest('.code-editor').querySelector('.copy-btn');
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(editor.getValue());
+            copyBtn.innerHTML = '<i class="bi bi-check"></i>';
+            setTimeout(() => {
+                copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+            }, 2000);
+        });
+    });
+});
+</script>
+{% endblock %} 

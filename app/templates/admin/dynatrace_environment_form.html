@@ -1,0 +1,78 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<div class="page-header mb-4">
+    <h1 class="page-title">{{ title }}</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.environment_name.label(class="form-label") }}
+                    {{ form.environment_name(class="form-control") }}
+                    {% for error in form.environment_name.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.environment_id.label(class="form-label") }}
+                    {{ form.environment_id(class="form-control") }}
+                    {% for error in form.environment_id.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                {{ form.environment_url.label(class="form-label") }}
+                {{ form.environment_url(class="form-control") }}
+                {% for error in form.environment_url.errors %}
+                    <span class="text-danger">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.environment_api_token.label(class="form-label") }}
+                    {{ form.environment_api_token(class="form-control") }}
+                    {% for error in form.environment_api_token.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.environment_paas_token.label(class="form-label") }}
+                    {{ form.environment_paas_token(class="form-control") }}
+                    {% for error in form.environment_paas_token.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.user_id.label(class="form-label") }}
+                    {{ form.user_id(class="form-control") }}
+                    {% for error in form.user_id.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="form-check form-switch mt-4">
+                        {{ form.is_managed(class="form-check-input") }}
+                        {{ form.is_managed.label(class="form-check-label") }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('admin.list_dynatrace_environments') }}" 
+                   class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

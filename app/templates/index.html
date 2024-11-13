@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}EC Dynatrace Workshop Platform{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="hero-title">Welcome to EC's Dynatrace Workshop Platform</h1>
+                <p class="hero-subtitle">This platform provides a hands-on learning environment for European Commission's Dynatrace workshops and practical exercises.</p>
+                
+                <div class="feature-card">
+                    <div class="card-header">
+                        <i class="bi bi-gear-fill text-primary"></i>
+                        <h5>Training Platform Features</h5>
+                    </div>
+                    <ul class="feature-list">
+                        <li>
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Access to dedicated AKS clusters</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Integration with EC's Dynatrace environment</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Hands-on practical exercises</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Interactive learning materials</span>
+                        </li>
+                    </ul>
+                </div>
+
+                {% if not current_user.is_authenticated %}
+                <div class="mt-4">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> Login to Start
+                    </a>
+                </div>
+                {% else %}
+                <div class="mt-4 d-flex gap-3">
+                    <a href="{{ url_for('courses.list') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-collection-play me-2"></i> View Workshops
+                    </a>
+                    <a href="{{ url_for('tools.list') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-tools me-2"></i> Access Tools
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="logo-container">
+                    <img src="{{url_for('static', filename='img/logos/ec-logo.png')}}" 
+                         alt="EC Logo" 
+                         class="hero-logo">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hero-section {
+    position: relative;
+    min-height: calc(100vh - 56px);
+    background: #ffffff;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow: hidden;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #2c3e50;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(45deg, #2c3e50, #3498db);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: #6c757d;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.feature-card {
+    background: #ffffff;
+    border-radius: 1.5rem;
+    padding: 0;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.card-header i {
+    font-size: 1.5rem;
+    color: #0d6efd;
+}
+
+.card-header h5 {
+    margin: 0;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 2rem;
+    margin: 0;
+}
+
+.feature-list li {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    color: #495057;
+    font-size: 1.1rem;
+}
+
+.feature-list li i {
+    color: #2ecc71;
+    font-size: 1.25rem;
+}
+
+.btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #0d6efd, #0099ff);
+    border: none;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.2);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3);
+}
+
+.btn-outline-primary {
+    border: 2px solid #0d6efd;
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: linear-gradient(45deg, #0d6efd, #0099ff);
+    border-color: transparent;
+    transform: translateY(-2px);
+}
+
+.logo-container {
+    position: relative;
+    padding: 2rem;
+    transform: none;
+}
+
+.hero-logo {
+    max-height: 300px;
+    animation: none;
+}
+
+@media (max-width: 992px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-logo {
+        max-height: 200px;
+    }
+}
+
+/* Reset any Bootstrap container margins */
+body {
+    overflow-x: hidden;
+}
+
+.container {
+    margin-top: 0 !important;
+}
+
+#content {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+</style>
+{% endblock %} 

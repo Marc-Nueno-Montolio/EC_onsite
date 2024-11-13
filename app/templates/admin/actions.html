@@ -1,0 +1,833 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="page-title">Admin Actions</h1>
+            <p class="text-muted">Manage backend operations and deployments</p>
+        </div>
+    </div>
+
+    <!-- Log Generation Scripts Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Log Generation Scripts</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for script_id, script in scripts.items() %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ script.name }}</h6>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input script-toggle" type="checkbox" 
+                                       id="script{{ script_id }}" 
+                                       data-script-id="{{ script_id }}"
+                                       data-script-type="{{ script.get('script_type', '') }}"
+                                       data-script-name="{{ script.get('script_name', '') }}"
+                                       data-vm-id="{{ script.get('vm_id', '') }}">
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">{{ script.description }}</p>
+                            <p class="text-muted script-status" id="status-script-{{ script_id }}">Status: Inactive</p>
+                            <button class="btn btn-sm btn-info view-output" 
+                                    data-script-id="{{ script_id }}" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#outputModal{{ script_id }}">
+                                View Output
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this after the scripts section, before the deployment actions -->
+    {% for script_id, script in scripts.items() %}
+    <div class="modal fade" id="outputModal{{ script_id }}" tabindex="-1" aria-labelledby="outputModalLabel{{ script_id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="outputModalLabel{{ script_id }}">{{ script.name }} Output</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <pre id="output-script-{{ script_id }}" class="bg-dark text-light p-3" style="height: 300px; overflow-y: auto;">
+                    </pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Add this after the script output modals -->
+    <div class="modal fade" id="dynakubeDeployModal">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Deploy Dynatrace</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="dynatraceEditorContainer">
+                        <div id="dynatraceYamlEditor" style="height: 400px;"></div>
+                    </div>
+                    <div id="dynatraceConsoleContainer" style="display: none;">
+                        <pre class="console-window" id="dynatraceOutput"></pre>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="dynakubeModalDeployButton" class="btn btn-primary" onclick="submitDynakubeDeployment()">
+                        Deploy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EasyTrade Deploy Modal -->
+    <div class="modal fade" id="easytradeDeployModal">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-rocket me-2"></i>
+                        EasyTrade Deployment
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <pre class="console-window" id="easytradeOutput"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="easytradeModalDeployButton" class="btn btn-primary" onclick="submitEasyTradeDeployment()">
+                        Deploy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deployment Actions Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Deployment Actions</h5>
+        </div>
+        <div class="card-body">
+            <!-- Dynatrace Operator Deployment -->
+            <div class="action-group mb-4">
+                <h6>Dynatrace Operator Deployment</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="dynatraceClusterSelect" class="form-label">Select AKS Cluster</label>
+                            <select class="form-select mb-2" id="dynatraceClusterSelect">
+                                <option selected disabled>Select Cluster...</option>
+                                {% for cluster in aks_clusters %}
+                                <option value="{{ cluster.id }}" 
+                                        data-vm-id="{{ cluster.vm.id if cluster.vm else '' }}"
+                                        data-name="{{ cluster.name }}">
+                                    {{ cluster.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <button id="dynatraceDeployButton" class="btn btn-primary" onclick="deployDynakubeConfig()">
+                            Deploy Dynatrace Operator
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AKS Connection -->
+            <div class="action-group mb-4">
+                <h6>AKS Cluster Connection</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <select class="form-select mb-2" id="aksClusterSelect">
+                            <option selected disabled>Select Cluster...</option>
+                            {% for cluster in aks_clusters %}
+                            <option value="{{ cluster.id }}" 
+                                    data-vm-id="{{ cluster.vm.id if cluster.vm else '' }}"
+                                    data-name="{{ cluster.name }}">
+                                {{ cluster.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-info" onclick="connectAKS()">
+                            Connect to Cluster
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EasyTrade Deployment -->
+            <div class="action-group">
+                <h6>EasyTrade Deployment</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <select class="form-select mb-2" id="easytradeClusterSelect">
+                            <option value="" disabled selected>Choose a cluster...</option>
+                            {% for cluster in aks_clusters %}
+                                <option value="{{ cluster.id }}" 
+                                        data-vm-id="{{ cluster.vm.id if cluster.vm else '' }}"
+                                        data-name="{{ cluster.name }}">
+                                    {{ cluster.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <button id="easytradeDeployButton" class="btn btn-primary" onclick="deployEasyTrade()">
+                            Deploy EasyTrade
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Output Console -->
+    <div class="card" id="consoleCard" style="display: none;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Output Console</h5>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary me-2" onclick="clearConsole()">Clear Console</button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleConsole()">
+                    <i class="fas fa-chevron-up" id="consoleToggleIcon"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="console-output" class="console-window">
+                <!-- Output will be displayed here -->
+            </div>
+        </div>
+    </div>
+    <button class="btn btn-primary mt-3" onclick="toggleConsole()" id="showConsoleBtn">
+        Show Console
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .action-group {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .action-group:last-child {
+        border-bottom: none;
+    }
+
+    .console-window {
+        background-color: #1e1e1e;
+        color: #fff;
+        padding: 1rem;
+        font-family: monospace;
+        height: 400px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        border-radius: 4px;
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .script-toggle {
+        width: 3rem;
+        height: 1.5rem;
+    }
+
+    .form-switch .form-check-input {
+        cursor: pointer;
+    }
+
+    .page-title {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+
+    .form-select:focus {
+        border-color: #2c3e50;
+        box-shadow: 0 0 0 0.2rem rgba(44,62,80,0.15);
+    }
+
+    .console-output {
+        background-color: #1e1e1e;
+        color: #fff;
+        padding: 1rem;
+        font-family: monospace;
+        height: 300px;
+        overflow-y: auto;
+        margin: 0;
+        white-space: pre-wrap;
+        font-size: 14px;
+    }
+
+    .modal-lg {
+        max-width: 800px;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+
+<script>
+const socket = io();
+
+// Global variables
+let dynatraceEditor = null;
+let isDynatraceDeploying = false;
+let isEasyTradeDeploying = false;
+
+// Helper functions
+function setModalDeployingState(buttonId, isDeploying, isComplete = false) {
+    const button = document.getElementById(buttonId);
+    if (!button) return;
+    
+    if (isComplete) {
+        button.innerHTML = `<i class="fas fa-check me-2"></i>Deployed`;
+        button.disabled = true;
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-success');
+    } else if (isDeploying) {
+        button.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Deploying...
+        `;
+        button.disabled = true;
+    } else {
+        button.innerHTML = 'Deploy';
+        button.disabled = false;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-primary');
+    }
+}
+
+function setDynatraceDeployingState(isDeploying, isComplete = false) {
+    const button = document.getElementById('deployDynatraceButton');
+    isDynatraceDeploying = isDeploying;
+    
+    if (!button) return;
+    
+    if (isComplete) {
+        button.innerHTML = `<i class="fas fa-check me-2"></i>Deployed`;
+        button.disabled = true;
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-success');
+    } else if (isDeploying) {
+        button.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Deploying...
+        `;
+        button.disabled = true;
+    } else {
+        button.innerHTML = `<i class="fas fa-rocket me-2"></i>Deploy Dynatrace`;
+        button.disabled = false;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-primary');
+    }
+}
+
+function updateDynatraceConsole(message) {
+    const consoleOutput = document.getElementById('dynatraceOutput');
+    if (consoleOutput) {
+        const timestamp = new Date().toLocaleTimeString();
+        consoleOutput.innerHTML += `[${timestamp}] ${message}\n`;
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+}
+
+// Function to set cookie
+function setCookie(name, value, days) {
+    const d = new Date();
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + d.toUTCString();
+    document.cookie = name + "=" + value + ";" + expires + ";path=/";
+}
+
+// Function to get cookie
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// Update toggle state and save to cookie
+function updateToggleState(scriptId, status) {
+    const toggle = document.querySelector(`[data-script-id="${scriptId}"]`);
+    if (toggle) {
+        toggle.checked = status;
+        setCookie(`script_${scriptId}_status`, status, 7); // Save for 7 days
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Restore toggle states from cookies
+    const scriptToggles = document.querySelectorAll('.script-toggle');
+    scriptToggles.forEach(toggle => {
+        const scriptId = toggle.dataset.scriptId;
+        const savedState = getCookie(`script_${scriptId}_status`);
+        if (savedState === 'true') {
+            toggle.checked = true;
+            // Restart script if it was running
+            socket.emit('start_script', {
+                script_id: scriptId,
+                script_name: toggle.dataset.scriptName
+            });
+        }
+    });
+
+    // Handle toggle changes
+    scriptToggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const scriptId = this.dataset.scriptId;
+            const scriptType = this.dataset.scriptType;
+            const scriptName = this.dataset.scriptName;
+            const status = this.checked;
+            
+            // Save state to cookie
+            setCookie(`script_${scriptId}_status`, status, 7);
+            
+            if (status) {
+                socket.emit('start_script', {
+                    script_id: scriptId,
+                    script_name: scriptName
+                });
+            } else {
+                socket.emit('stop_script', {
+                    script_id: scriptId
+                });
+            }
+        });
+    });
+});
+
+socket.on('script_output', function(data) {
+    appendScriptOutput(data.script_id, data.output);
+});
+
+socket.on('log_output', function(data) {
+    // Append the log message to your modal console
+    const consoleOutput = document.getElementById('console-output');  // Adjust ID as needed
+    consoleOutput.innerHTML += data.data + '<br>';
+    // Auto-scroll to bottom
+    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+});
+
+function appendScriptOutput(scriptId, output) {
+    const outputElement = document.getElementById(`output-script-${scriptId}`);
+    const timestamp = new Date().toLocaleTimeString();
+    outputElement.innerHTML += `[${timestamp}] ${output}\n`;
+    outputElement.scrollTop = outputElement.scrollHeight;
+}
+
+function updateStatus(scriptId, isActive) {
+    const statusElement = document.getElementById(`status-script-${scriptId}`);
+    if (statusElement) {
+        statusElement.textContent = `Status: ${isActive ? 'Active' : 'Inactive'}`;
+        statusElement.className = `text-muted script-status ${isActive ? 'text-success' : 'text-muted'}`;
+    }
+}
+
+function appendToConsole(message) {
+    const console = document.getElementById('console-output');
+    const timestamp = new Date().toLocaleTimeString();
+    console.innerHTML += `[${timestamp}] ${message}\n`;
+    console.scrollTop = console.scrollHeight;
+}
+
+function clearConsole() {
+    document.getElementById('console-output').innerHTML = '';
+}
+
+// Initialize editors when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Dynatrace editor
+    const dynatraceEditorElement = document.getElementById("dynatraceYamlEditor");
+    if (dynatraceEditorElement) {
+        dynatraceEditor = ace.edit(dynatraceEditorElement);
+        dynatraceEditor.setTheme("ace/theme/monokai");
+        dynatraceEditor.session.setMode("ace/mode/yaml");
+        dynatraceEditor.setOptions({
+            fontSize: "14px",
+            showPrintMargin: false,
+            showGutter: true,
+            highlightActiveLine: true,
+            wrap: true
+        });
+    }
+
+    // Initialize modals
+    const dynatraceModal = document.getElementById('dynakubeDeployModal');
+    const easytradeModal = document.getElementById('easytradeDeployModal');
+
+    // Add modal close handlers
+    if (dynatraceModal) {
+        dynatraceModal.addEventListener('hidden.bs.modal', function () {
+            const button = document.getElementById('dynatraceDeployButton');
+            if (button && button.disabled) {
+                setDynatraceDeployingState(false, true);
+            }
+        });
+    }
+
+    if (easytradeModal) {
+        easytradeModal.addEventListener('hidden.bs.modal', function () {
+            const button = document.getElementById('easytradeDeployButton');
+            if (button && button.disabled) {
+                setEasyTradeDeployingState(false, true);
+            }
+        });
+    }
+});
+
+// Deployment functions
+async function deployDynakubeConfig() {
+    const clusterSelect = document.getElementById('dynatraceClusterSelect');
+    const selectedOption = clusterSelect.selectedOptions[0];
+    
+    if (!selectedOption || selectedOption.value === "") {
+        alert('Please select a cluster first');
+        return;
+    }
+
+    const clusterId = selectedOption.value;
+
+    try {
+        // Update URL to include cluster_id
+        const response = await fetch(`/admin/api/get-dynakube-yaml/${clusterId}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message);
+        }
+
+        // Show the modal with editor
+        const modalEl = document.getElementById('dynakubeDeployModal');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        
+        // Set the YAML content in the editor
+        dynatraceEditor.setValue(data.content, -1);
+        
+        // Reset view to editor
+        document.getElementById('dynatraceEditorContainer').style.display = 'block';
+        document.getElementById('dynatraceConsoleContainer').style.display = 'none';
+        
+        modal.show();
+
+    } catch (error) {
+        alert('Failed to load Dynakube configuration: ' + error);
+    }
+}
+
+async function submitDynakubeDeployment() {
+    const clusterSelect = document.getElementById('dynatraceClusterSelect');
+    const selectedOption = clusterSelect.selectedOptions[0];
+    
+    if (!selectedOption || selectedOption.value === "") {
+        alert('Please select a cluster first');
+        return;
+    }
+
+    const vmId = selectedOption.dataset.vmId;
+    const clusterName = selectedOption.dataset.name;
+    
+    // Get the current content from the editor
+    const yamlContent = dynatraceEditor.getValue();
+
+    // Switch to console view
+    document.getElementById('dynatraceEditorContainer').style.display = 'none';
+    document.getElementById('dynatraceConsoleContainer').style.display = 'block';
+    
+    setModalDeployingState('dynakubeModalDeployButton', true);
+    updateDynatraceConsole(`Starting Dynatrace deployment for cluster: ${clusterName}`);
+
+    try {
+        const response = await fetch('/admin/api/deploy-dynakube', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                yaml_content: yamlContent,
+                vm_id: vmId,
+                cluster_name: clusterName
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            // Show each step's output
+            data.steps.forEach(step => {
+                if (step.command) {
+                    updateDynatraceConsole(`\nExecuting: ${step.command}`);
+                }
+                if (step.output) {
+                    updateDynatraceConsole(step.output);
+                }
+            });
+            
+            updateDynatraceConsole('\nDeployment completed successfully');
+            setModalDeployingState('dynakubeModalDeployButton', false, true);
+            setDynatraceDeployingState(false, true);
+        } else {
+            updateDynatraceConsole(`\nDeployment failed: ${data.message}`);
+            if (data.details) {
+                updateDynatraceConsole(`Details: ${data.details}`);
+            }
+            setModalDeployingState('dynakubeModalDeployButton', false);
+            setDynatraceDeployingState(false);
+        }
+    } catch (error) {
+        updateDynatraceConsole(`\nError during deployment: ${error}`);
+        setModalDeployingState('dynakubeModalDeployButton', false);
+        setDynatraceDeployingState(false);
+    }
+}
+
+// Socket.IO listeners for real-time updates
+socket.on('dynatrace_deploy_step', function(data) {
+    if (data.step) {
+        updateDynatraceConsole(`\n${data.step}:`);
+    }
+    if (data.command) {
+        updateDynatraceConsole(`Command: ${data.command}`);
+    }
+    if (data.output) {
+        updateDynatraceConsole(`Output: ${data.output}`);
+    }
+    if (data.error) {
+        updateDynatraceConsole(`Error: ${data.error}`);
+    }
+});
+
+socket.on('dynatrace_deploy_complete', function(data) {
+    if (data.success) {
+        updateDynatraceConsole('\nDeployment completed successfully');
+        setModalDeployingState('dynakubeModalDeployButton', false, true);
+        setDynatraceDeployingState(false, true);
+    }
+});
+
+socket.on('script_status', function(data) {
+    if (data.status === 'already_running') {
+        console.log(data.message);
+        updateToggleState(data.script_id, true);
+    } else {
+        updateStatus(data.script_id, data.status === 'active');
+        updateToggleState(data.script_id, data.status === 'active');
+    }
+});
+
+// EasyTrade deployment functions
+async function deployEasyTrade() {
+    const clusterSelect = document.getElementById('easytradeClusterSelect');
+    const selectedOption = clusterSelect.selectedOptions[0];
+    
+    if (!selectedOption || selectedOption.disabled) {
+        alert('Please select a cluster first');
+        return;
+    }
+
+    const clusterId = selectedOption.value;
+    const vmId = selectedOption.dataset.vmId;
+    const clusterName = selectedOption.dataset.name;
+
+    // Show the modal first
+    const modal = new bootstrap.Modal(document.getElementById('easytradeDeployModal'));
+    modal.show();
+
+    setEasyTradeDeployingState(true);
+    updateEasyTradeConsole(`Starting EasyTrade deployment for cluster: ${clusterName}`);
+    
+    try {
+        const response = await fetch('/admin/api/deploy-easytrade', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                cluster_id: clusterId,
+                vm_id: vmId,
+                cluster_name: clusterName
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            updateEasyTradeConsole('Creating EasyTrade directory...');
+            updateEasyTradeConsole(data.mkdir_output);
+            
+            updateEasyTradeConsole('Cloning/Updating repository...');
+            updateEasyTradeConsole(data.git_output);
+            
+            updateEasyTradeConsole('Creating namespace...');
+            updateEasyTradeConsole(data.namespace_output);
+            
+            updateEasyTradeConsole('Applying Kubernetes manifests...');
+            updateEasyTradeConsole(data.kubectl_output);
+            
+            if (data.deployment) {
+                updateEasyTradeConsole(`Frontend Service Details:`);
+                updateEasyTradeConsole(`IP: ${data.deployment.frontend_ip || 'Pending...'}`);
+                updateEasyTradeConsole(`Port: ${data.deployment.frontend_port || '80'}`);
+            }
+            
+            updateEasyTradeConsole('Deployment completed successfully');
+            setModalDeployingState('easytradeModalDeployButton', false, true);
+            setEasyTradeDeployingState(false, true);
+        } else {
+            updateEasyTradeConsole(`Deployment failed: ${data.message}`);
+            if (data.details) {
+                updateEasyTradeConsole(`Details: ${data.details}`);
+            }
+            setModalDeployingState('easytradeModalDeployButton', false);
+            setEasyTradeDeployingState(false);
+        }
+    } catch (error) {
+        updateEasyTradeConsole(`Error during deployment: ${error}`);
+        setModalDeployingState('easytradeModalDeployButton', false);
+        setEasyTradeDeployingState(false);
+    }
+}
+
+function updateEasyTradeConsole(message) {
+    const console = document.getElementById('easytradeOutput');
+    if (!console) {
+        return;
+    }
+    const timestamp = new Date().toLocaleTimeString();
+    console.innerHTML += `[${timestamp}] ${message}\n`;
+    console.scrollTop = console.scrollHeight;
+}
+
+function setEasyTradeDeployingState(isDeploying, isComplete = false) {
+    const button = document.getElementById('easytradeDeployButton');
+    isEasyTradeDeploying = isDeploying;
+    
+    if (!button) return;
+    
+    if (isComplete) {
+        button.innerHTML = `<i class="fas fa-check me-2"></i>Deployed`;
+        button.disabled = true;
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-success');
+    } else if (isDeploying) {
+        button.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Deploying...
+        `;
+        button.disabled = true;
+    } else {
+        button.innerHTML = 'Deploy EasyTrade';
+        button.disabled = false;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-primary');
+    }
+}
+
+// Make sure both modals are initialized when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize both modals
+    const dynatraceModal = new bootstrap.Modal(document.getElementById('dynakubeDeployModal'));
+    const easytradeModal = new bootstrap.Modal(document.getElementById('easytradeDeployModal'));
+});
+
+// Add this with your other deployment functions
+async function connectAKS() {
+    const clusterSelect = document.getElementById('aksClusterSelect');
+    const selectedOption = clusterSelect.selectedOptions[0];
+    
+    if (!selectedOption || selectedOption.value === "") {
+        alert('Please select a cluster first');
+        return;
+    }
+
+    const clusterId = selectedOption.value;
+    
+    try {
+        const response = await fetch(`/admin/aks_clusters/${clusterId}/connect`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update button state temporarily
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check me-2"></i>Connected';
+            button.classList.remove('btn-info');
+            button.classList.add('btn-success');
+            
+            // Reset button after 3 seconds
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-info');
+            }, 3000);
+
+            // Update console output
+            const consoleOutput = document.getElementById('console-output');
+            if (consoleOutput) {
+                const timestamp = new Date().toLocaleTimeString();
+                consoleOutput.innerHTML += `[${timestamp}] Successfully connected to cluster\n`;
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+        } else {
+            alert('Failed to connect to cluster: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to connect to cluster. Check console for details.');
+    }
+}
+
+function loadDynakubeYaml() {
+    const clusterId = document.getElementById('cluster-select').value;
+    if (!clusterId) {
+        alert('Please select a cluster first');
+        return;
+    }
+    
+    fetch(`/admin/api/get-dynakube-yaml/${clusterId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('yaml-content').value = data.content;
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+</script>
+{% endblock %}
+

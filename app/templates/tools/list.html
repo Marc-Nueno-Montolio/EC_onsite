@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- View Toggle -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Tools & Resources</h4>
+        <div class="btn-group" role="group" aria-label="View toggle">
+            <button type="button" class="btn btn-outline-primary" onclick="setView('grid')" id="gridViewBtn">
+                <i class="bi bi-grid"></i>
+            </button>
+            <button type="button" class="btn btn-outline-primary" onclick="setView('list')" id="listViewBtn">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Cards Container -->
+    <div id="cardsContainer" class="row g-4" data-view="grid">
+        <!-- Dynatrace Card -->
+        <div class="col-12" data-card-type="tool">
+            <div class="card h-100 shadow-sm border-0 overflow-hidden">
+                <div class="card-header bg-gradient-primary text-white d-flex align-items-center py-3 border-0">
+                    <div class="icon-shape bg-white text-primary rounded-3 me-3">
+                        <i class="bi bi-cloud-check fs-2"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0">Dynatrace</h5>
+                        <small class="text-white-50">Application Performance Monitoring</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if dt_environment %}
+                    <div class="bg-light rounded-3 p-4 mb-4">
+                        <h6 class="text-primary fw-bold mb-3">Environment Details</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                                <span class="text-muted">Environment URL</span>
+                                <a href="{{ dt_environment.environment_base_url() }}" class="text-primary text-decoration-none text-truncate ms-2" style="max-width: 200px;">
+                                    {{ dt_environment.environment_base_url() }}
+                                    <i class="bi bi-box-arrow-up-right ms-2"></i>
+                                </a>
+                            </li>
+                            <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                                <span class="text-muted">Environment ID</span>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill">{{ dt_environment.environment_id }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="d-grid">
+                        <a href="{{ dt_environment.environment_base_url() }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-up-right me-2"></i>Launch Environment
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-cloud-slash text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h6 class="fw-bold text-muted">No Environment Configured</h6>
+                        <p class="text-muted small">Contact your administrator to set up Dynatrace.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Kubernetes Clusters Card -->
+        <div class="col-12" data-card-type="tool">
+            <div class="card h-100 shadow-sm border-0 overflow-hidden">
+                <div class="card-header bg-gradient-primary text-white d-flex align-items-center py-3 border-0">
+                    <div class="icon-shape bg-white text-primary rounded-3 me-3">
+                        <i class="bi bi-diagram-3 fs-2"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0">Kubernetes Clusters</h5>
+                        <small class="text-white-50">AKS Management</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if aks_clusters %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="text-muted small">
+                                <tr>
+                                    <th>CLUSTER NAME</th>
+                                    <th>STATUS</th>
+                                    <th class="text-end">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cluster in aks_clusters %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="icon-shape icon-shape-sm bg-primary-subtle text-primary rounded-3 me-3">
+                                                <i class="bi bi-hdd-network"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ cluster.name }}</h6>
+                                                <small class="text-muted">{{ cluster.subscription_id[:8] }}...</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if cluster.vm %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Connected
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-warning-subtle text-warning rounded-pill">
+                                            <i class="bi bi-exclamation-circle-fill me-1"></i>No VM
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if cluster.vm %}
+                                        <a href="{{ url_for('admin.vm_console', id=cluster.vm.id) }}" 
+                                           class="btn btn-sm btn-primary" 
+                                           target="_blank"
+                                           data-bs-toggle="tooltip" 
+                                           title="Open Console">
+                                            <i class="bi bi-terminal"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-diagram-2 text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h6 class="fw-bold text-muted">No Clusters Found</h6>
+                        <p class="text-muted small">No Kubernetes clusters are currently configured.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Deployments Card -->
+        <div class="col-12" data-card-type="tool">
+            <div class="card h-100 shadow-sm border-0 overflow-hidden">
+                <div class="card-header bg-gradient-primary text-white d-flex align-items-center py-3 border-0">
+                    <div class="icon-shape bg-white text-primary rounded-3 me-3">
+                        <i class="bi bi-rocket fs-2"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0">Deployments</h5>
+                        <small class="text-white-50">Application Instances</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if deployments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="text-muted small">
+                                <tr>
+                                    <th>NAMESPACE</th>
+                                    <th>ENDPOINT</th>
+                                    <th>UPDATED</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for deployment in deployments %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="icon-shape icon-shape-sm bg-primary-subtle text-primary rounded-3 me-3">
+                                                <i class="bi bi-hdd-network"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ deployment.name }}</h6>
+                                                <small class="text-muted">{{ deployment.namespace[:8] }}...</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="http://{{ deployment.frontend_ip }}:{{ deployment.frontend_port }}" target="_blank" class="text-decoration-none">
+                                            {{ deployment.frontend_ip }}:{{ deployment.frontend_port }}
+                                            <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {{ deployment.last_updated.strftime('%Y-%m-%d %H:%M') }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-rocket text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h6 class="fw-bold text-muted">No Deployments Found</h6>
+                        <p class="text-muted small">No deployments are currently configured.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #0033a0, #0066cc);
+}
+
+.icon-shape {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+}
+
+.bg-primary-subtle {
+    background-color: rgba(0, 102, 204, 0.1);
+}
+
+.bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.icon-shape-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+}
+
+.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.table > :not(caption) > * > * {
+    padding: 1rem 1.25rem;
+}
+
+.table th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.fw-medium {
+    font-weight: 500;
+}
+
+/* View transition styles */
+#cardsContainer[data-view="grid"] [data-card-type="tool"] {
+    width: 50%;
+}
+
+#cardsContainer[data-view="list"] [data-card-type="tool"] {
+    width: 100%;
+}
+
+.view-transition {
+    transition: width 0.3s ease-in-out;
+}
+
+/* Active state for view toggle buttons */
+.btn-group .btn.active {
+    background-color: var(--bs-primary);
+    color: white;
+}
+</style>
+
+<script>
+function setView(viewType) {
+    const container = document.getElementById('cardsContainer');
+    const gridBtn = document.getElementById('gridViewBtn');
+    const listBtn = document.getElementById('listViewBtn');
+    
+    // Add transition class
+    container.classList.add('view-transition');
+    
+    // Set view type
+    container.setAttribute('data-view', viewType);
+    
+    // Update button states
+    if (viewType === 'grid') {
+        gridBtn.classList.add('active');
+        listBtn.classList.remove('active');
+    } else {
+        listBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+    }
+    
+    // Store preference
+    localStorage.setItem('preferredView', viewType);
+    
+    // Remove transition class after animation
+    setTimeout(() => {
+        container.classList.remove('view-transition');
+    }, 300);
+}
+
+// Initialize view from stored preference
+document.addEventListener('DOMContentLoaded', function() {
+    const preferredView = localStorage.getItem('preferredView') || 'grid';
+    setView(preferredView);
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+});
+</script>
+
+<!-- Console Modal -->
+<div class="modal fade" id="consoleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">VM Console</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="console-container">
+                    <div class="console-output" id="modalConsoleOutput"></div>
+                    <div class="console-input">
+                        <input type="text" class="form-control" 
+                               id="modalCommand" 
+                               placeholder="Enter command...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deployment Details Modal -->
+<div class="modal fade" id="deploymentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Deployment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="deploymentDetails">
+                <!-- Details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+let currentVmId = null;
+
+function openConsole(vmId) {
+    currentVmId = vmId;
+    document.getElementById('modalConsoleOutput').innerHTML = '';
+    const modal = new bootstrap.Modal(document.getElementById('consoleModal'));
+    modal.show();
+}
+
+document.getElementById('modalCommand').addEventListener('keypress', async function(event) {
+    if (event.key === 'Enter' && currentVmId) {
+        const command = this.value;
+        try {
+            const response = await fetch('/api/vm/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    vm_id: currentVmId,
+                    command: command
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                const consoleOutput = document.getElementById('modalConsoleOutput');
+                consoleOutput.innerHTML += `<div class="command">${command}</div>`;
+                consoleOutput.innerHTML += `<div class="output">${data.output}</div>`;
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+        } catch (error) {
+            console.error('Error executing command:', error);
+        }
+        this.value = '';
+    }
+});
+
+async function viewDeploymentDetails(deploymentId) {
+    try {
+        const response = await fetch(`/api/deployment/${deploymentId}`);
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('deploymentDetails').innerHTML = data.html;
+            new bootstrap.Modal(document.getElementById('deploymentModal')).show();
+        }
+    } catch (error) {
+        console.error('Error fetching deployment details:', error);
+    }
+}
+</script>
+
+<style>
+.console-container {
+    background: #1e1e1e;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.console-output {
+    height: 300px;
+    overflow-y: auto;
+    color: #fff;
+    font-family: monospace;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+
+.console-input input {
+    background: #2d2d2d;
+    color: #fff;
+    border: 1px solid #3d3d3d;
+}
+
+.command {
+    color: #00ff00;
+    margin-bottom: 5px;
+}
+
+.output {
+    color: #fff;
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+}
+</style>
+
+<!-- Initialize tooltips -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+});
+</script>
+{% endblock %}

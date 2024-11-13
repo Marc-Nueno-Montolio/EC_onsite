@@ -1,0 +1,81 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<div class="page-header mb-4">
+    <h1 class="page-title">User Course Progress</h1>
+    <p class="page-subtitle">Track and manage user progress through courses</p>
+</div>
+
+{% for user_id, data in users_progress.items() %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">{{ data.user.email }}</h5>
+    </div>
+    <div class="card-body">
+        {% for course_id, course_data in data.courses.items() %}
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6>{{ course_data.title }}</h6>
+                <span class="status-badge" style="background: var(--primary-gradient)">
+                    {{ course_data.completion_percentage }}%
+                </span>
+            </div>
+            <div class="progress mb-2" style="height: 8px;">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: {{ course_data.completion_percentage }}%; background: var(--primary-gradient)">
+                </div>
+            </div>
+            <div class="ms-4">
+                {% for section in course_data.all_sections %}
+                <div class="form-check">
+                    <input type="checkbox" 
+                           class="form-check-input section-checkbox" 
+                           id="section-{{ user_id }}-{{ course_id }}-{{ section }}"
+                           data-user-id="{{ user_id }}"
+                           data-course-id="{{ course_id }}"
+                           data-section-id="{{ section }}"
+                           {% if section in course_data.completed %}checked{% endif %}
+                           onchange="toggleCompletion(this)">
+                    <label class="form-check-label" for="section-{{ user_id }}-{{ course_id }}-{{ section }}">
+                        {{ section }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+<script>
+function toggleCompletion(checkbox) {
+    const userId = checkbox.dataset.userId;
+    const courseId = checkbox.dataset.courseId;
+    const sectionId = checkbox.dataset.sectionId;
+    
+    fetch('/admin/toggle-completion', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            course_id: courseId,
+            section_id: sectionId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            checkbox.checked = !checkbox.checked;
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        checkbox.checked = !checkbox.checked;
+        alert('Error: ' + error);
+    });
+}
+</script> 

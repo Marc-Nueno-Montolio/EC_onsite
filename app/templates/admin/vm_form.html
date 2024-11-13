@@ -1,0 +1,82 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<div class="page-header mb-4">
+    <h1 class="page-title">{{ title }}</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-control") }}
+                    {% if form.name.errors %}
+                        {% for error in form.name.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.ip_address.label(class="form-label") }}
+                    {{ form.ip_address(class="form-control") }}
+                    {% if form.ip_address.errors %}
+                        {% for error in form.ip_address.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.username.label(class="form-label") }}
+                    {{ form.username(class="form-control") }}
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.password.label(class="form-label") }}
+                    {{ form.password(class="form-control") }}
+                    {% if form.password.errors %}
+                        {% for error in form.password.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.user_id.label(class="form-label") }}
+                    {{ form.user_id(class="form-control") }}
+                    {% if form.user_id.errors %}
+                        {% for error in form.user_id.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.aks_cluster_id.label(class="form-label") }}
+                    {{ form.aks_cluster_id(class="form-control") }}
+                    {% if form.aks_cluster_id.errors %}
+                        {% for error in form.aks_cluster_id.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('admin.list_vms') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

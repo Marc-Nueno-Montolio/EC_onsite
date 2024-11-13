@@ -1,0 +1,68 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Deployments</h1>
+        <p class="page-subtitle">Manage and monitor system deployments</p>
+    </div>
+    <button class="btn btn-primary" onclick="refreshDeployments()">
+        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Cluster</th>
+                        <th>Namespace</th>
+                        <th>Frontend Service</th>
+                        <th>Frontend IP</th>
+                        <th>Frontend Port</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for deployment in deployments %}
+                    <tr>
+                        <td>{{ deployment.cluster.name }}</td>
+                        <td>
+                            <span class="badge" style="background: var(--primary-gradient)">
+                                {{ deployment.namespace }}
+                            </span>
+                        </td>
+                        <td>{{ deployment.frontend_service }}</td>
+                        <td>
+                            {% if deployment.frontend_ip %}
+                            <a href="http://{{ deployment.frontend_ip }}:{{ deployment.frontend_port }}" 
+                               target="_blank"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>
+                                {{ deployment.frontend_ip }}
+                            </a>
+                            {% endif %}
+                        </td>
+                        <td>{{ deployment.frontend_port }}</td>
+                        <td>#</td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-warning" onclick="editDeployment({{ deployment.id }})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteDeployment({{ deployment.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
