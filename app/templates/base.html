@@ -14,6 +14,9 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/datetime/1.5.1/css/dataTables.dateTime.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mermaid.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -144,7 +147,144 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.0/theme-monokai.min.js"></script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        import panzoom from 'https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/+esm';
+        
+        mermaid.initialize({
+            startOnLoad: true,
+            securityLevel: 'loose',
+            flowchart: {
+                htmlLabels: false,
+
+            },
+        });
+
+        // Initialize pan/zoom after Mermaid renders
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for Mermaid to render
+            setTimeout(() => {
+                document.querySelectorAll('pre.mermaid svg').forEach(svg => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'mermaid-wrapper';
+                    svg.parentNode.insertBefore(wrapper, svg);
+                    wrapper.appendChild(svg);
+
+                    // Add zoom controls
+                    const controls = document.createElement('div');
+                    controls.className = 'mermaid-controls';
+                    controls.innerHTML = `
+                        <button class="zoom-in">+</button>
+                        <button class="zoom-out">-</button>
+                        <button class="reset">↺</button>
+                    `;
+                    wrapper.appendChild(controls);
+
+                    // Initialize panzoom
+                    const instance = panzoom(svg, {
+                        maxZoom: 5,
+                        minZoom: 0.5,
+                        bounds: true,
+                        smoothScroll: false
+                    });
+
+                    // Add control handlers
+                    controls.querySelector('.zoom-in').onclick = () => instance.zoomIn();
+                    controls.querySelector('.zoom-out').onclick = () => instance.zoomOut();
+                    controls.querySelector('.reset').onclick = () => {
+                        instance.reset();
+                        instance.moveTo(0, 0);
+                    };
+                });
+            }, 1000); // Wait for Mermaid rendering
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/mermaid-controls.js') }}"></script>
+    <script>
+        // Initialize mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+
+        // Initialize highlight.js
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+        });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default'
+        });
+        
+        // Find all pre code blocks with language-mermaid class
+        document.querySelectorAll('pre code.language-mermaid').forEach(function(block) {
+            // Create a div for mermaid
+            var div = document.createElement('div');
+            div.className = 'mermaid';
+            div.textContent = block.textContent;
+            // Replace the pre element with the div
+            block.parentElement.replaceWith(div);
+        });
+    });
+    </script>
     {% block scripts %}{% endblock %}
+
+    <style>
+    .mermaid-wrapper {
+        position: relative;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        overflow: hidden;
+    }
+
+    .mermaid-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+        display: flex;
+        gap: 5px;
+    }
+
+    .mermaid-controls button {
+        width: 30px;
+        height: 30px;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        transition: all 0.2s;
+    }
+
+    .mermaid-controls button:hover {
+        background: #f8f9fa;
+        transform: translateY(-1px);
+    }
+
+    pre.mermaid {
+        background-color: transparent;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+        .mermaid-wrapper {
+            background: #2d3
+    </style>
 
 </body>
 </html>

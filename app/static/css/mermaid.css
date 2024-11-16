@@ -1,0 +1,55 @@
+.mermaid-wrapper {
+    position: relative;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.mermaid-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 100;
+    display: flex;
+    gap: 5px;
+}
+
+.mermaid-controls button {
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mermaid-controls button:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.mermaid {
+    transition: transform 0.3s ease;
+    transform-origin: center center;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .mermaid-wrapper {
+        background: #2d3436;
+    }
+    
+    .mermaid-controls button {
+        background: rgba(45,52,54,0.9);
+        color: #fff;
+        border-color: #4a5568;
+    }
+    
+    .mermaid-controls button:hover {
+        background: #4a5568;
+    }
+} 

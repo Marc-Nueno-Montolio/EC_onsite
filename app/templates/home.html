@@ -3,5 +3,138 @@
 {% block title %}Welcome{% endblock %}
 
 {% block content %}
-Welcome to your space
+<div class="container py-5">
+    <!-- Welcome Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 mb-4">Welcome to Your Learning Space</h1>
+            <p class="lead text-muted">Your centralized platform for learning, development tools, and resources.</p>
+        </div>
+    </div>
+
+    <!-- Main Features -->
+    <div class="row g-4">
+        <!-- Workshops Card -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="icon-shape bg-primary-subtle text-primary rounded-3 me-3">
+                            <i class="bi bi-book fs-2"></i>
+                        </div>
+                        <h3 class="h4 mb-0">Learning Workshops</h3>
+                    </div>
+                    <p class="text-muted">Access structured learning paths and interactive Workshops designed to enhance your skills.</p>
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Step-by-step tutorials</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Track your progress</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Hands-on exercises</li>
+                    </ul>
+                    <a href="{{ url_for('courses.list') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Browse Workshops
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tools Card -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="icon-shape bg-primary-subtle text-primary rounded-3 me-3">
+                            <i class="bi bi-tools fs-2"></i>
+                        </div>
+                        <h3 class="h4 mb-0">Development Tools</h3>
+                    </div>
+                    <p class="text-muted">Access essential development and monitoring tools in one centralized location.</p>
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Dynatrace monitoring</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Kubernetes cluster management</li>
+                        <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Deployment tracking</li>
+                    </ul>
+                    <a href="{{ url_for('tools.list') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Access Tools
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Tips -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card border-0 bg-light">
+                <div class="card-body p-4">
+                    <h4 class="mb-4">Quick Navigation Tips</h4>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-1-circle-fill text-primary fs-4 me-3"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-2">Start Learning</h5>
+                                    <p class="text-muted mb-0">Click "Browse Workshops" to view available learning paths and begin your journey.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-2-circle-fill text-primary fs-4 me-3"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-2">Access Tools</h5>
+                                    <p class="text-muted mb-0">Visit the Tools section to manage deployments and monitor applications.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-3-circle-fill text-primary fs-4 me-3"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-2">Track Progress</h5>
+                                    <p class="text-muted mb-0">Monitor your course completion and learning achievements.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.icon-shape {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-primary-subtle {
+    background-color: rgba(0, 102, 204, 0.1);
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.display-4 {
+    font-weight: 600;
+}
+
+.lead {
+    font-size: 1.1rem;
+}
+</style>
 {% endblock %} 

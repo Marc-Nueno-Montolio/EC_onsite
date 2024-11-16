@@ -8,24 +8,24 @@
         <div class="course-banner-content">
             <div class="d-flex flex-column w-100">
                 <div class="d-flex align-items-center gap-4">
-                    <img src="" 
+                    <img src="{{ course.image if course.image else url_for('static', filename='images/default-course.png') }}" 
                          class="course-banner-image" 
                          alt="{{ course.title }}"
-                         onerror="">
+                         onerror="this.src='{{ url_for('static', filename='images/default-course.png') }}'">
                     <div>
                         <h1 class="course-banner-title">{{ course.title }}</h1>
                         <div class="progress-wrapper">
                             <div class="progress" style="height: 6px;">
                                 <div class="progress-bar" 
                                      role="progressbar" 
-                                     style="width: {{ course.completion }}%"
-                                     aria-valuenow="{{ course.completion }}" 
+                                     style="width: {{ course.completion|default(0) }}%"
+                                     aria-valuenow="{{ course.completion|default(0) }}" 
                                      aria-valuemin="0" 
                                      aria-valuemax="100">
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mt-2">
-                                <small class="text-light">Progress: {{ course.completion }}%</small>
+                                <small class="text-light">Progress: {{ course.completion|default(0) }}%</small>
                             </div>
                         </div>
                         <nav aria-label="breadcrumb" class="mt-2">
@@ -756,41 +756,13 @@ function toggleComplete(courseId, sectionId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const isNowCompleted = btnText.textContent.includes('Mark');
-            
-            // Update button appearance
-            btn.classList.toggle('btn-success');
-            btn.classList.toggle('btn-outline-primary');
-            icon.classList.toggle('bi-check-circle-fill');
-            icon.classList.toggle('bi-check-circle');
-            btnText.textContent = isNowCompleted ? 'Section Completed' : 'Mark Complete';
-            
-            // Update sidebar status
-            const currentSectionLink = document.querySelector('.section-link.active .section-status-indicator i');
-            if (currentSectionLink) {
-                currentSectionLink.className = isNowCompleted ? 
-                    'bi bi-check-circle-fill text-success' : 
-                    'bi bi-circle-fill text-primary';
-            }
-            
-            // Update progress bar
-            if (data.completion !== undefined) {
-                const progressBar = document.querySelector('.progress-bar');
-                const progressText = document.querySelector('.progress-wrapper small');
-                if (progressBar && progressText) {
-                    progressBar.style.width = `${data.completion}%`;
-                    progressBar.setAttribute('aria-valuenow', data.completion);
-                    progressText.textContent = `Progress: ${data.completion}%`;
-                }
-            }
+            // Reload the page instead of updating UI elements
+            window.location.reload();
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        // Optionally show error message to user
-    })
-    .finally(() => {
-        // Remove loading state
+        // Remove loading state in case of error
         btn.classList.remove('loading');
         btn.disabled = false;
     });

@@ -6,6 +6,10 @@ import inspect
 from flask_login import current_user, login_required
 from app.models import SectionCompletion, User
 from app.database import db
+from markdown.extensions import fenced_code
+from markdown.extensions import tables
+from markdown.extensions import toc
+from markdown.extensions.codehilite import CodeHiliteExtension
 
 @bp.route('/')
 @login_required
@@ -118,6 +122,23 @@ def section_details(course_id, section_id):
     with open(course_json) as f:
         course = json.load(f)
         course['id'] = course_id
+        
+        # Add image URL if present
+        if 'image' in course:
+            course['image'] = url_for('courses.serve_media', 
+                                    course_id=course_id, 
+                                    filename=course['image'])
+        
+        # Calculate completion percentage
+        if current_user.is_authenticated:
+            completions = SectionCompletion.query.filter_by(
+                user_id=current_user.id,
+                course_id=course_id
+            ).all()
+            completed_sections = {c.section_id for c in completions}
+            total_sections = len(course['sections'])
+            course['completion'] = round((len(completed_sections) / total_sections) * 100)
+            course['completed_sections'] = completed_sections
 
     # Get section content
     section_path = os.path.join(course_path, 'sections', section_id)
@@ -190,179 +211,50 @@ def parse_section_content_markdown(content):
     import markdown
     from flask import url_for
 
-    # Updated image pattern to handle both syntaxes
-    image_pattern = r'!\[(.*?)\]\((.*?)\)(?:\{width=(\d+%)\})?|!\[(.*?)\]\((.*?)\s+"(\d+%?)"\)'
+    # First handle Mermaid diagrams - convert them to pre class="mermaid"
+    def replace_mermaid(match):
+        diagram_content = match.group(1).strip()
+        return f'<pre class="mermaid">{diagram_content}</pre>'
 
-    def image_replacer(match):
-        # Handle curly brace syntax
-        if match.group(1) is not None:
-            alt_text = match.group(1)
-            image_path = match.group(2)
-            size_spec = match.group(3) if match.group(3) else 'medium'
-        # Handle quoted syntax
-        else:
-            alt_text = match.group(4)
-            image_path = match.group(5)
-            size_spec = match.group(6) if match.group(6) else 'medium'
-        
-        course_id = request.view_args.get('course_id')
-        media_url = url_for('courses.serve_media', 
-                          course_id=course_id, 
-                          filename=image_path)
-        
-        # Enhanced size handling
-        if isinstance(size_spec, str):
-            if size_spec.endswith('%'):
-                # Handle percentage values
-                style = f'width: {size_spec};'
-            elif size_spec.endswith('px'):
-                # Handle pixel values
-                style = f'width: {size_spec};'
-            else:
-                # Default size classes
-                size_classes = {
-                    'small': 'width: 200px;',
-                    'medium': 'width: 400px;',
-                    'big': 'width: 800px;'
-                }
-                style = size_classes.get(size_spec.lower(), size_classes['medium'])
-        
-        return f'<img src="{media_url}" alt="{alt_text}" style="{style}" class="img-fluid">'
+    # Replace ```mermaid blocks with proper mermaid pre tags
+    content = re.sub(
+        r'```mermaid\s*(.*?)\s*```',
+        replace_mermaid,
+        content,
+        flags=re.DOTALL
+    )
 
-    # Replace image paths before splitting into blocks
-    content = re.sub(image_pattern, image_replacer, content)
+    # Process regular markdown
+    md = markdown.Markdown(extensions=['extra', 'nl2br', 'sane_lists'])
+    return md.convert(content)
 
-    # Add fenced code block pattern
-    code_pattern = r'```(\w+)?\n(.*?)```'
-    
-    def code_block_replacer(match):
-        language = match.group(1) or 'text'
-        code_content = match.group(2).strip()
-        
-        return f'''
-        <div class="code-editor mb-3" data-language="{language}">
-            <div class="code-editor-header d-flex justify-content-between align-items-center p-2">
-                <span class="language-label">{language}</span>
-                <button class="btn btn-sm btn-outline-light copy-btn">
-                    <i class="bi bi-clipboard"></i>
-                </button>
-            </div>
-            <div class="code-content" style="height: 200px;">{code_content}</div>
-        </div>
-        '''
-
-    # Replace code blocks before other markdown processing
-    content = re.sub(code_pattern, code_block_replacer, content, flags=re.DOTALL)
-
-    # Configure markdown with extensions for proper list handling
-    md = markdown.Markdown(extensions=[
+def parse_markdown(content):
+    extensions = [
         'extra',
+        'codehilite',
+        'tables',
+        'toc',
+        'pymdownx.arithmatex',
         'nl2br',
-        'sane_lists'  # Add this extension for better list handling
-    ])
-    
-    # Pre-process content to fix list formatting
-    def fix_list_formatting(content):
-        lines = content.split('\n')
-        result = []
-        in_list = False
-        
-        for line in lines:
-            # Check if line starts with number and period
-            if re.match(r'^\d+\.', line.strip()):
-                in_list = True
-                # Ensure proper indentation for nested lists
-                if line.startswith('    ') and result and result[-1].strip():
-                    result.append(line)
-                else:
-                    result.append(line.strip())
-            else:
-                if in_list and line.strip() and not line.startswith('    '):
-                    in_list = False
-                result.append(line)
-                
-        return '\n'.join(result)
+        'sane_lists',
+        'fenced_code'
+    ]
 
-    # Pre-process content
-    content = fix_list_formatting(content)
+    extension_configs = {
+        'codehilite': {
+            'css_class': 'highlight',
+            'linenums': True
+        },
+        'toc': {
+            'permalink': True
+        }
+    }
 
-    # Split content into blocks
-    blocks = re.split(r'\n\n+', content)
-    html_parts = []
-    
-    for block in blocks:
-        block = block.strip()
-        if block.startswith('@validate'):
-            # Parse validation directive
-            lines = block.split('\n')
-            directive = lines[0]
-            
-            # Extract validation parameters
-            params = re.match(r'@validate\(type="([^"]+)", id="([^"]+)"\)', directive)
-            if not params:
-                continue
-                
-            input_type = params.group(1)
-            validate_id = params.group(2)
-            
-            # Get question text (for action type, this is the button text)
-            question = lines[1] if len(lines) > 1 else 'Validate'
-            
-            # Get options (lines starting with -)
-            options = [line[1:].strip() for line in lines[2:] if line.strip().startswith('-')]
-            
-            # Generate HTML based on input type
-            if input_type == "action":
-                html = f'''
-                <div class="mb-3">
-                    <button id="btn-{validate_id}" class="btn btn-primary" onclick="validateAnswer('{validate_id}', 'action')">
-                        {question}
-                    </button>
-                    <div id="result-{validate_id}" class="mt-2"></div>
-                </div>
-                '''
-                html_parts.append(html)
-            elif input_type == "text-input":
-                html = f'''
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <p class="card-text">{question}</p>
-                        <div class="input-group">
-                            <input type="text" class="form-control" data-validate-input="{validate_id}">
-                            <button class="btn btn-primary" onclick="validateAnswer('{validate_id}', 'text')">
-                                Check Answer
-                            </button>
-                        </div>
-                        <div id="result-{validate_id}" class="mt-2"></div>
-                    </div>
-                </div>
-                '''
-                html_parts.append(html)
-            elif input_type == "button":
-                buttons = []
-                for option in options:
-                    buttons.append(f'''
-                    <button class="btn btn-outline-primary me-2 mb-2" 
-                            onclick="validateAnswer('{validate_id}', 'button', '{option}')">
-                        {option}
-                    </button>
-                    ''')
-                
-                html = f'''
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <p class="card-text">{question}</p>
-                        <div class="d-flex flex-wrap">
-                            {"".join(buttons)}
-                        </div>
-                        <div id="result-{validate_id}" class="mt-2"></div>
-                    </div>
-                </div>
-                '''
-                html_parts.append(html)
-        else:
-            # Process non-validate blocks with markdown
-            if block:
-                html_parts.append(md.convert(block))
-    
-    return '\n'.join(html_parts)
+    md = markdown.Markdown(
+        extensions=extensions,
+        extension_configs=extension_configs
+    )
+
+    # Convert markdown to HTML
+    html = md.convert(content)
+    return html

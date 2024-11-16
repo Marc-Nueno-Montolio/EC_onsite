@@ -1071,6 +1071,7 @@ def get_dynakube_yaml(cluster_id):
             yaml_content = file.read()
 
         dt_environment = DynatraceEnvironment.query.filter_by(user_id=cluster.user_id).first()
+        print(f"Rerieving cluster {cluster_id} for user {cluser.user_id}")
         if not dt_environment:
             return jsonify({
                 'success': False,
