@@ -31,6 +31,10 @@ import time
 from werkzeug.utils import secure_filename
 from jinja2 import Template
 
+import shutil
+import zipfile
+import io
+
 script_runner = ScriptRunner(socketio)
 
 @admin_bp.route('/')
@@ -42,6 +46,8 @@ def admin_dashboard():
 @admin_bp.route('/users/new', methods=['GET', 'POST'])
 @login_required
 def create_user():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Access denied'})
     form = UserForm()
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data, is_admin=form.is_admin.data)
@@ -55,6 +61,9 @@ def create_user():
 @admin_bp.route('/users/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_user(id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Access denied'})
+    
     user = User.query.get_or_404(id)
     form = UserForm(obj=user)
     if form.validate_on_submit():
@@ -922,40 +931,48 @@ def upload_file():
         return jsonify({'success': False, 'message': 'Access denied'})
     
     try:
-        current_path = request.form.get('path', '')
-        file = request.files.get('file')
+        current_path = request.form.get('current_path', '')
         
-        if not file:
-            return jsonify({'success': False, 'message': 'No file provided'})
+        # Get the full path where files should be uploaded
+        upload_base_path = os.path.join(COURSE_CONTENT_PATH, current_path)
         
-        # Secure the filename
-        filename = secure_filename(file.filename)
-        upload_path = os.path.join(COURSE_CONTENT_PATH, current_path, filename)
+        # Ensure the base upload directory exists
+        os.makedirs(upload_base_path, exist_ok=True)
         
-        # Security check to prevent directory traversal
-        if not os.path.commonpath([upload_path, COURSE_CONTENT_PATH]) == COURSE_CONTENT_PATH:
-            return jsonify({'success': False, 'message': 'Invalid path'})
-        
-        # Check if file already exists
-        if os.path.exists(upload_path):
-            return jsonify({'success': False, 'message': 'File already exists'})
-        
-        # Save the file
-        file.save(upload_path)
+        files = request.files.getlist('files')
+        for file in files:
+            if not file:
+                continue
+                
+            # Get the filename from the FileStorage object
+            filename = file.filename
+            
+            if '/' in filename:  # This is a file within a directory structure
+                # Create the full path including subdirectories
+                relative_path = os.path.dirname(filename)
+                full_dir_path = os.path.join(upload_base_path, relative_path)
+                os.makedirs(full_dir_path, exist_ok=True)
+                
+                # Get just the filename without the path
+                base_filename = os.path.basename(filename)
+                full_file_path = os.path.join(full_dir_path, base_filename)
+            else:  # This is a single file
+                full_file_path = os.path.join(upload_base_path, filename)
+            
+            # Security check
+            if not os.path.commonpath([full_file_path, COURSE_CONTENT_PATH]) == COURSE_CONTENT_PATH:
+                return jsonify({'success': False, 'message': 'Invalid path detected'})
+            
+            # Save the file
+            file.save(full_file_path)
         
         return jsonify({
             'success': True,
-            'message': 'File uploaded successfully',
-            'file': {
-                'name': filename,
-                'path': os.path.relpath(upload_path, COURSE_CONTENT_PATH),
-                'size': os.path.getsize(upload_path),
-                'modified': datetime.fromtimestamp(os.path.getmtime(upload_path)).strftime('%Y-%m-%d %H:%M:%S'),
-            }
+            'message': 'Upload completed successfully'
         })
         
     except Exception as e:
-        current_app.logger.error(f"Error uploading file: {str(e)}")
+        current_app.logger.error(f"Error uploading files: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
 
@@ -974,11 +991,12 @@ def delete_file():
     
     try:
         if os.path.isfile(file_path):
-            os.remove(file_path)
-        else:
-            os.rmdir(file_path)
+            os.remove(file_path)  # Remove file
+        elif os.path.isdir(file_path):
+            shutil.rmtree(file_path)  # Remove directory and all its contents
         return jsonify({'success': True})
     except Exception as e:
+        current_app.logger.error(f"Error deleting item: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
 @admin_bp.route('/file-explorer/content')
@@ -1213,19 +1231,20 @@ def move_item():
         current_app.logger.error(f"Error moving item: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
-@admin_bp.route('/admin/file-explorer/read-file')
+@admin_bp.route('/file-explorer/read-file')
 @login_required
 def read_file():
-    path = request.args.get('path')
-    if not path:
-        return jsonify({'success': False, 'message': 'No path provided'})
+    path = request.args.get('path', '')
+    # Ensure the path is safe and valid
+    safe_path = os.path.join(COURSE_CONTENT_PATH, path)
     
-    try:
-        with open(path, 'r', encoding='utf-8') as file:
-            content = file.read()
-        return jsonify({'success': True, 'content': content})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    if not os.path.isfile(safe_path):
+        return jsonify({'success': False, 'message': 'File not found'}), 404
+    
+    with open(safe_path) as f:
+        content = f.read()
+    
+    return jsonify({'success': True, 'content': content})
 
 def code_block_replacer(match):
     language = match.group(1) or 'text'
@@ -1246,5 +1265,60 @@ def code_block_replacer(match):
         <div class="code-content" style="height: {calculated_height}px;">{code_content}</div>
     </div>
     '''
+
+@admin_bp.route('/file-explorer/save', methods=['POST'])
+@login_required
+def save_file():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Access denied'})
+    
+    try:
+        data = request.get_json()
+        path = data.get('path', '')
+        content = data.get('content', '')
+        
+        if not path:
+            return jsonify({'success': False, 'message': 'Invalid request'})
+        
+        file_path = os.path.join(COURSE_CONTENT_PATH, path)
+        
+        # Security check
+        if not os.path.commonpath([file_path, COURSE_CONTENT_PATH]) == COURSE_CONTENT_PATH:
+            return jsonify({'success': False, 'message': 'Invalid path'})
+        
+        # Save the file
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        current_app.logger.error(f"Error saving file: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@admin_bp.route('/file-explorer/download-folder', methods=['POST'])
+@login_required
+def download_folder():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Access denied'})
+
+    folder_path = request.json.get('path', '')
+    full_folder_path = os.path.join(COURSE_CONTENT_PATH, folder_path)
+
+    if not os.path.exists(full_folder_path) or not os.path.isdir(full_folder_path):
+        return jsonify({'success': False, 'message': 'Folder not found'}), 404
+
+    # Create a zip file in memory
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for root, _, files in os.walk(full_folder_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                # Create a relative path for the file in the zip
+                zip_file.write(file_path, os.path.relpath(file_path, full_folder_path))
+
+    zip_buffer.seek(0)
+
+    return send_file(zip_buffer, as_attachment=True, download_name=f"{os.path.basename(folder_path)}.zip", mimetype='application/zip')
 
 

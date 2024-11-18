@@ -83,13 +83,20 @@
 
                     <!-- Courses Dropdown -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="coursesDropdown" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="coursesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-graduation-cap me-2"></i> Courses
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="coursesDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('admin.file_explorer') }}">
-                                <i class="fas fa-folder-open me-2"></i>File Explorer
-                            </a></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin.file_explorer') }}">
+                                    <i class="fas fa-folder-open me-2"></i> File Explorer
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('courses.list') }}">
+                                    <i class="fas fa-book me-2"></i> Courses Preview
+                                </a>
+                            </li>
                         </ul>
                     </li>
                     {% else %}

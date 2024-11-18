@@ -8,10 +8,13 @@
     </div>
     <div class="btn-group">
         <button class="btn btn-primary" onclick="document.getElementById('fileUpload').click()">
-            <i class="bi bi-upload me-2"></i>Upload
+            <i class="bi bi-upload me-2"></i>Upload File
         </button>
-        <button class="btn btn-primary" onclick="showNewFolderModal()">
-            <i class="bi bi-folder-plus me-2"></i>New Folder
+        <button class="btn btn-primary" onclick="document.getElementById('folderUpload').click()">
+            <i class="bi bi-folder-plus me-2"></i>Upload Folder
+        </button>
+        <button class="btn btn-success" onclick="downloadFolder('{{ current_path }}')">
+            <i class="bi bi-download me-2"></i>Download Folder
         </button>
     </div>
 </div>
@@ -133,7 +136,9 @@
     </div>
 </div>
 
-<input type="file" id="fileUpload" style="display: none;" onchange="uploadFile(this)">
+<!-- Hidden file inputs -->
+<input type="file" id="fileUpload" style="display: none;" multiple onchange="uploadFile(this)">
+<input type="file" id="folderUpload" style="display: none;" webkitdirectory onchange="uploadFile(this)">
 
 <!-- Modals -->
 <div class="modal fade" id="newFolderModal" tabindex="-1">
@@ -256,8 +261,22 @@ async function uploadFile(input) {
     if (!input.files.length) return;
     
     const formData = new FormData();
-    formData.append('file', input.files[0]);
-    formData.append('path', '{{ current_path }}');
+    const currentPath = '{{ current_path }}'; // Get the current path from the template context
+    
+    // Add the current path to the formData
+    formData.append('current_path', currentPath);
+    
+    // Loop through the files and append them to the FormData object
+    for (const file of input.files) {
+        if (input.webkitdirectory) {
+            // For directory uploads, maintain the relative structure within the current path
+            const relativePath = file.webkitRelativePath;
+            formData.append('files', file, relativePath);
+        } else {
+            // For single file uploads, just use the filename
+            formData.append('files', file, file.name);
+        }
+    }
     
     try {
         const response = await fetch('/admin/file-explorer/upload', {
@@ -444,6 +463,31 @@ function renameItemConfirm() {
     .catch(error => {
         alert('Failed to rename item: ' + error);
     });
+}
+
+async function downloadFolder(path) {
+    const response = await fetch('/admin/file-explorer/download-folder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path: path })
+    });
+
+    if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `${path.split('/').pop()}.zip`; // Set the download filename
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } else {
+        const data = await response.json();
+        alert('Failed to download folder: ' + data.message);
+    }
 }
 </script>
 {% endblock %} 
