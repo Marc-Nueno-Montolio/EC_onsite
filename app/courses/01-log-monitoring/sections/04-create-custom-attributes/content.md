@@ -12,24 +12,23 @@ You can use them as filters in the log viewer (table options and log record deta
 
 We will start by generating some custom log data for Dynatrace to ingest using the API. First, we need an API token to authenticate our API call. Navigate within your Dynatrace tenant to settings -> integration -> dynatrace API.
 
-1. Create a new API token named `perform` and allow the v2 token scope of 'ingest logs'. Click Generate token. Copy the token value to a notepad temporarily.
-   
-![API Token](images/APIToken.png){width=100%}
+1. Create a new API token named `mytoken` and allow the v2 token scope of 'ingest logs'. Click Generate token. Copy the token value to a notepad temporarily.
 
 2. Click your profile icon in the top right corner of the UI. Select `Environment API V2` to launch a new tab in your browser. Within the REST UI find the `logs` endpoint. Click to expand the endpoints and select `POST`. 
 
-![logs API](images/LogsAPI.png){width=100%}
+![logs API](../../assets/images/LogsAPI.png)
 
 3. On the right hand side of that row, you'll find a lock icon. Click the lock icon and paste your API token to authenticate. 
 
-![API Auth](images/APIAuth.png){width=100%}
+![API Auth](../../assets/images/APIAuth.png)
 
 4. Close the authentication window and select `Try it out` on the POST endpoint.
 
 5. Remove all text in the example value box. Copy the snippet below and paste the contents within teh Example Value box.
 
 ```
-[{
+[
+{
   "level": "error",
   "source": "Skynet",
   "application.id": "PaymentService-Prod",
@@ -52,9 +51,10 @@ We will start by generating some custom log data for Dynatrace to ingest using t
   "source": "Skynet",
   "application.id": "AuthenticationService-Prod",
   "message": "AuthenticationService-Prod failure."
-}]
-```
+}
+]
 
+```
 6. Click Execute to send the log data to Dynatrace. Response Code should be HTTP 204.
 
 ### Step 2: View Results in Log Viewer
@@ -74,7 +74,7 @@ We will start by generating some custom log data for Dynatrace to ingest using t
 
 7. Return to the log viewer and you now should be able to use the new application.id attribute as a filter to view all events by application:
 
-![app.idfilter](images/applicationid.png){width=100%}
+![app.idfilter](../../assets/images/applicationid.png)
 
 ### Bonus:
 
