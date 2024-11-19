@@ -767,6 +767,135 @@ def deploy_easytrade():
         if 'ssh' in locals():
             ssh.close()
 
+
+
+@admin_bp.route('/api/deploy-easytravel', methods=['POST'])
+@login_required
+def deploy_easytravel():
+    data = request.get_json()
+    cluster_id = data.get('cluster_id')
+    vm_id = data.get('vm_id')
+    cluster_name = data.get('cluster_name')
+    
+    if not all([cluster_id, vm_id, cluster_name]):
+        return jsonify({
+            'success': False,
+            'message': 'Missing required parameters'
+        })
+    
+    try:
+        # Get the VM and cluster details
+        vm = VM.query.get(vm_id)
+        cluster = AKSCluster.query.get(cluster_id)
+        if not vm or not cluster:
+            raise Exception("VM or Cluster not found")
+
+        # Setup SSH client
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(vm.ip_address, username=vm.username, password=vm.password)
+
+        # Create directory if it doesn't exist
+        stdin, stdout, stderr = ssh.exec_command('mkdir -p ~/easytravel')
+        if stderr.read():
+            mkdir_output = "Directory already exists"
+        else:
+            mkdir_output = "Directory created successfully"
+
+        # Check if repository already exists
+        stdin, stdout, stderr = ssh.exec_command('test -d ~/easytravel/.git && echo "exists"')
+        repo_exists = stdout.read().decode().strip() == "exists"
+
+        # Clone or pull repository
+        if repo_exists:
+            stdin, stdout, stderr = ssh.exec_command('cd ~/easytravel && git pull')
+            git_output = "Repository updated successfully"
+        else:
+            stdin, stdout, stderr = ssh.exec_command('cd ~/easytravel && git clone https://github.com/Dynatrace/easyTravel-Docker .')
+            git_output = "Repository cloned successfully"
+
+        # Create namespace (ignore if exists)
+        stdin, stdout, stderr = ssh.exec_command('kubectl create namespace easytravel')
+        namespace_output = stdout.read().decode() or "Namespace already exists"
+
+        # Apply kubernetes manifests
+        stdin, stdout, stderr = ssh.exec_command('cd ~/easytravel && kubectl apply -f kubernetes-manifests -n easytravel')
+        kubectl_output = stdout.read().decode()
+        kubectl_error = stderr.read().decode()
+
+        if kubectl_error and 'error' in kubectl_error.lower():
+            raise Exception(f"kubectl apply failed: {kubectl_error}")
+
+        # Wait for the frontend service to get an external IP (max 5 minutes)
+        max_attempts = 30  # 30 attempts * 10 seconds = 5 minutes
+        frontend_ip = None
+        frontend_port = None
+        
+        for attempt in range(max_attempts):
+            stdin, stdout, stderr = ssh.exec_command(
+                'kubectl get service frontendreverseproxy-easytravel -n easytravel -o json'
+            )
+            service_output = stdout.read().decode()
+            service_error = stderr.read().decode()
+
+            if service_error:
+                current_app.logger.warning(f"Attempt {attempt + 1}: {service_error}")
+                time.sleep(10)
+                continue
+
+            try:
+                service_data = json.loads(service_output)
+                if service_data.get('status', {}).get('loadBalancer', {}).get('ingress'):
+                    frontend_ip = service_data['status']['loadBalancer']['ingress'][0].get('ip')
+                    if frontend_ip:
+                        frontend_port = service_data['spec']['ports'][0].get('port', 80)
+                        current_app.logger.info(f"Found frontend IP: {frontend_ip}")
+                        break
+            except json.JSONDecodeError:
+                pass
+
+            current_app.logger.info(f"Attempt {attempt + 1}: Waiting for frontend IP...")
+            time.sleep(10)
+
+        if not frontend_ip:
+            raise Exception("Timeout waiting for frontend service IP")
+
+        # Update or create deployment record
+        deployment = Deployment.query.filter_by(cluster_id=cluster_id).first()
+        if not deployment:
+            deployment = Deployment(cluster_id=cluster_id)
+
+        deployment.frontend_ip = frontend_ip
+        deployment.frontend_port = frontend_port
+        deployment.last_updated = datetime.utcnow()
+
+        db.session.add(deployment)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'mkdir_output': mkdir_output,
+            'git_output': git_output,
+            'namespace_output': namespace_output,
+            'kubectl_output': kubectl_output,
+            'deployment': {
+                'frontend_ip': frontend_ip,
+                'frontend_port': frontend_port
+            }
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Deployment error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'details': getattr(e, 'stderr', 'No additional details available')
+        })
+    
+    finally:
+        if 'ssh' in locals():
+            ssh.close()
+
 # Dictionary to track running scripts and their stop events
 script_processes = {}
 script_stop_events = {}

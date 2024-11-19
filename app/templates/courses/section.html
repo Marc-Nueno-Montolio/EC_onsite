@@ -89,27 +89,34 @@
                 <div class="content">
                     {{ content|safe }}
                 </div>
-            </div>
-            
-            <!-- Enhanced navigation buttons -->
-            <div class="d-flex justify-content-between mt-4 mb-5">
-                {% if prev_section %}
-                <a href="{{ url_for('courses.section_details', course_id=course.id, section_id=prev_section) }}" 
-                   class="btn btn-nav btn-prev">
-                    <i class="bi bi-arrow-left"></i>
-                    <span>Previous Section</span>
-                </a>
-                {% else %}
-                <div></div>
-                {% endif %}
                 
-                {% if next_section %}
-                <a href="{{ url_for('courses.section_details', course_id=course.id, section_id=next_section) }}" 
-                   class="btn btn-nav btn-next">
-                    <span>Next Section</span>
-                    <i class="bi bi-arrow-right"></i>
-                </a>
-                {% endif %}
+                <!-- Print button -->
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-primary" onclick="window.print()">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                </div>
+                
+                <!-- Enhanced navigation buttons -->
+                <div class="d-flex justify-content-between mt-4 mb-5">
+                    {% if prev_section %}
+                    <a href="{{ url_for('courses.section_details', course_id=course.id, section_id=prev_section) }}" 
+                       class="btn btn-nav btn-prev">
+                        <i class="bi bi-arrow-left"></i>
+                        <span>Previous Section</span>
+                    </a>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+                    
+                    {% if next_section %}
+                    <a href="{{ url_for('courses.section_details', course_id=course.id, section_id=next_section) }}" 
+                       class="btn btn-nav btn-next">
+                        <span>Next Section</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </main>
     </div>
@@ -642,6 +649,33 @@
 .btn-primary.btn-lg {
     padding: 0.8rem 1.5rem;
     font-size: 1.1rem;
+}
+
+@media print {
+    /* Hide all elements that are not part of the content */
+    body * {
+        visibility: hidden;
+    }
+    .content, .content * {
+        visibility: visible;
+    }
+    .content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    /* Additional styles for print */
+    .content {
+        color: black; /* Ensure text is black */
+        background: white; /* Ensure background is white */
+    }
+
+    /* Hide navigation buttons during print */
+    .btn, .d-flex {
+        display: none !important;
+    }
 }
 </style>
 

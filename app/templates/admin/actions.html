@@ -119,6 +119,8 @@
         </div>
     </div>
 
+    
+
     <!-- Deployment Actions Section -->
     <div class="card mb-4">
         <div class="card-header">
@@ -199,6 +201,30 @@
                     </div>
                 </div>
             </div>
+
+            <!-- EasyTravel Deployment -->
+    <div class="action-group mb-4">
+        <h6>EasyTravel Deployment</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <select class="form-select mb-2" id="easytravelClusterSelect">
+                    <option value="" disabled selected>Choose a cluster...</option>
+                    {% for cluster in aks_clusters %}
+                        <option value="{{ cluster.id }}" 
+                                data-vm-id="{{ cluster.vm.id if cluster.vm else '' }}"
+                                data-name="{{ cluster.name }}">
+                            {{ cluster.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <button id="easytravelDeployButton" class="btn btn-primary" onclick="deployEasyTravel()">
+                    Deploy EasyTravel
+                </button>
+            </div>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -851,6 +877,51 @@ function loadDynakubeYaml() {
             }
         })
         .catch(error => console.error('Error:', error));
+}
+
+async function deployEasyTravel() {
+    const clusterSelect = document.getElementById('easytravelClusterSelect');
+    const selectedOption = clusterSelect.selectedOptions[0];
+    
+    if (!selectedOption || selectedOption.disabled) {
+        alert('Please select a cluster first');
+        return;
+    }
+
+    const clusterId = selectedOption.value;
+    const vmId = selectedOption.dataset.vmId;
+    const clusterName = selectedOption.dataset.name;
+
+    // Show the modal first (if you have a modal for EasyTravel)
+    const modal = new bootstrap.Modal(document.getElementById('easytravelDeployModal'));
+    modal.show();
+
+    // Add your deployment logic here
+    // Example: Call your API to deploy EasyTravel
+    try {
+        const response = await fetch('/admin/api/deploy-easytravel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                cluster_id: clusterId,
+                vm_id: vmId,
+                cluster_name: clusterName
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            // Handle successful deployment
+            console.log('EasyTravel deployed successfully');
+        } else {
+            alert('Deployment failed: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error during deployment:', error);
+        alert('Failed to deploy EasyTravel. Check console for details.');
+    }
 }
 </script>
 {% endblock %}
