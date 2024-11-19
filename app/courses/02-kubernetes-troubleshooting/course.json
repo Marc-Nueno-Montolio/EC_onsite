@@ -1,0 +1,10 @@
+{
+    "title": "Kubernetes Troubleshooting",
+    "description": "Learn how to troubleshoot Dynatrace Operator",
+    "image": "kubernetes_dashboard.jpeg",
+    "sections": [
+        "01-start",
+        "02-networking",
+        "03-resourcealerts"
+    ]
+} 

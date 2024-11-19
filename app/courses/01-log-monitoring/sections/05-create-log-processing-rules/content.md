@@ -1,6 +1,6 @@
 # Log Processing Rules
 As part of log ingestion pipeline, Log Processing allows us to transform incoming log record data for better understanding or analysis.
-![[processing-rules-diagram.png]]
+![processing-rules-diagram.png](images/processing-rules-diagram.png)
 Some common situations in which log processing rules are use
 - To define searchable custom attributes 
 - To Manipulate attributes (fields) from log records.
