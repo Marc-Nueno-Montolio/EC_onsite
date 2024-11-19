@@ -9,27 +9,33 @@
 
 - log on to the shell
 
-edit $HOME/dynatrace/dynakube.yaml
+edit `$HOME/dynatrace/dynakube.yaml`
 add a line under
 
-`spec:`
-`  networkZone: digit.onsite.ws<N>`
+```
+spec:
+    networkZone: digit.onsite.ws<N>
+```
 
 add lines for ActiveGate
 
-`spec:`
-`  activegate:`
-`    customProperties:`
-`      value: |`
-`        [connectivity]`
-`        dnsEntryPoint = https://dynakube-activegate.dynatrace:443/communication`
-
-
-`kubectl apply -f $HOME/dynatrace/dynakube.yaml`
-
+```
+spec:
+  activegate:
+    customProperties:
+      value: |
+        [connectivity]
+        dnsEntryPoint = https://dynakube-activegate.dynatrace:443/communication`
+```
+Apply with
+```
+kubectl apply -f $HOME/dynatrace/dynakube.yaml
+```
 Check the restarting of activegate and oneagent pods
 
-`kubectl -n dynatrace get pods`
+```
+kubectl -n dynatrace get pods
+```
 
 wait a couple of minutes
 
@@ -42,7 +48,9 @@ kill one of the oneagent pods and check again in Dynatrace after a couple of min
 - supportarchive
 - exec into oneagent pod
 
-`curl -k -v https://dynakube-activegate.dynatrace:443/communication`
+```
+curl -k -v https://dynakube-activegate.dynatrace:443/communication
+```
 
 DNS is working correct ? isn't it ?
 

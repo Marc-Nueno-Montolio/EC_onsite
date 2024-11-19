@@ -3,7 +3,7 @@
     "description": "Learn how to troubleshoot Dynatrace Operator",
     "image": "kubernetes_dashboard.jpeg",
     "sections": [
-        "01-start",
+        "01-guide",
         "02-networking",
         "03-resourcealerts"
     ]

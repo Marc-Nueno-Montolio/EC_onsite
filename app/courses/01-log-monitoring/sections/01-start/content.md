@@ -12,7 +12,8 @@ ___
 - **Easytravel Application**: A K8s microservices based refreshed version of the popular EasyTravel application.
 
 - **Dynatrace Operator**: Installed in the AKS cluster, the Dynatrace Operator enables fullstack kubernetes monitoring. It deploys containerized Active Gates and OneAgent pods as daemonsets to monitor the workloads running in the cluster. 
-  Check out more on the [Dynatrace Operator Documentation](https://docs.dynatrace.com/docs/setup-and-configuration/setup-on-k8s/installation) ![[dynatrace-operator.png]]
+  Check out more on the [Dynatrace Operator Documentation](https://docs.dynatrace.com/docs/setup-and-configuration/setup-on-k8s/installation) 
+  ![<img src="media/images/dynatrace-operator.png" width=200 />](media/images/dynatrace-operator.png){width=50%}
 
 - **Dynatrace Tenant**: Each participant has a dedicated Dynatrace tenant / environment. 
   You can access it from the tools section in the navigation menu on the top.
@@ -40,7 +41,7 @@ On the cluster overview page you will find a ... menu in the top right corner. S
 
 Scroll to the bottom of this page and enable the switch Monitor Events and Opt in to the Kubernetes events integration for analysis and alerting
 
-![Kubernetes Events Settings](images/monitor-k8s-events.png){width=100%}
+![Kubernetes Events Settings](media/images/monitor-k8s-events.png){width=80%}
 
 ### 4. Configure Log Monitoring Sources
 
@@ -56,10 +57,10 @@ The configuration is based on rules that use matchers for hierarchy, log path, a
 
 - Adding rules allows us to select whether we want to ingest or avoid log ingestion for log records that match certain criteria. 
     - Name the rule `Include K8s Logs`
-    - Add a matcher for k8s namespace name In this case we want to monitor logs from the easytravel application.
+    - Add a matcher for k8s namespace name In this case we want to monitor logs from the easytravel and easytrade applications.
     - Save the rule.
 
-![Add rule](images/add-rule.png){width=100%}
+  ![Add rule](media/images/add-rule.png){width=80%}
 
 *NOTE - choosing this setting will automatically ingest every log from every monitored source in your environment and will be subject to DDU consumption.*
 
